@@ -1,0 +1,259 @@
+graf_copy () 
+{ 
+    : update the library functions into their API source;
+    : date: 2019-10-04;
+    : date: 2019-11-15;
+    : date: 2019-12-14;
+    report_notfile ${1:-/dev/null} && { 
+        comment run from LIBRARYs DIRECTORY;
+        return 1
+    };
+    graf_prep $1 || { 
+        comment graf_prep FAILED;
+        return 2
+    };
+    : -------------------------------------- are linked to the ORG-view --;
+    chmod -w $1.d/.bak/*;
+    ln -f $1.d/.bak/* $(graf_lib)/src
+}
+graf_entry () 
+{ 
+    : entry points to GRAF APP;
+    : where TAPP is "The APP";
+    : date: 2020-01-22;
+    ${*:-echo} graf_{copy,entry,init,list,tapp,scenario,version}
+}
+graf_version () 
+{ 
+    : tracks the changelog;
+    : date: 2020-02-01;
+    echo graf 0.1.0
+}
+graf_init () 
+{ 
+    : allow custom GRAF_USER;
+    declare -f graf_user > /dev/null && graf_user || graf_default_user
+}
+graf_lib () 
+{ 
+    : where are the GRAFs, supporting data;
+    : date: 2019-10-01;
+    : ${GRAF_LIB:=$(commonplace)/lib/graf};
+    ${*:-echo} ${GRAF_LIB}
+}
+graf_list () 
+{ 
+    : list the available function tree graphs;
+    runfrom $(graf_lib) 2> /dev/null || return;
+    ls *.org
+}
+graf_main () 
+{ 
+    : produces the call graph for a list of functions, the MAIN program;
+    : an optional first argument NAME.out gives the HANDLE of the output files;
+    : the list is collected by app_fun fun ... tee .fun.app;
+    :;
+    : date: 2019-09-03;
+    app_trace $*;
+    report_notargcount 1 $# "[ handle.out ] function ..." && return 1;
+    local handle=$1;
+    [[ $1 = ${1%.out}.out ]] && { 
+        handle=${1%.out};
+        shift
+    };
+    report_notfunction $1 && return 1;
+    local file=${GRAF_LIB}/$handle.org;
+    local funs=${file%.org}.fun;
+    local fuse=${file%.org}.use;
+    local erro=${file%.org}.err;
+    app_trace handle: $handle, ARGS ${*:2:12};
+    app_fun $* | tee $funs | grep -v ^_ > $fuse;
+    app_trace $(wc -l $funs $fuse);
+    app_fcg $fuse $erro > $file;
+    app_trace $(wc -l $erro $file);
+    comment $file $funs
+}
+graf_mainhelp () 
+{ 
+    : write the SHD_TOHELP for each APPs MAIN functions,;
+    : where an APP has a TABLE in the GRAF_LIB,;
+    : written by GRAF_MAIN;
+    : date: 2019-10-04;
+    set -- $(graf_lib)/$1.rdb;
+    report_notfile $1 && return 1;
+    foreach shd_tohelp $(cat $1 | column mains| headoff)
+}
+graf_prep () 
+{ 
+    : update the library functions into NAME.D directory, retain modification time;
+    : BACKUP facilitates mod time retention;
+    : date: 2019-12-14;
+    : date: 2019-12-28;
+    report_notfile ${1:-/dev/null} && { 
+        comment run from LIBARY: $1 DIRECTORY;
+        return 1
+    };
+    app_trace PWD: $PWD, ARGS: $*;
+    lib_tidy $1;
+    f2file $1;
+    report_notdirectory $1.d && return 2;
+    : ---------------------------------------- the Individual Functions --;
+    indir $1.d backup_allfiles
+}
+graf_scenario () 
+{ 
+    : sample usage guide for multiple LIBs producing APPx;
+    : where an APP is also a function library, but entire to itself;
+    : each APP should have an _INIT function, so when SOURCEd,;
+    : it offers instructions on how to begin;
+    cat <<'EOF'
+
+    $ graf copy libA
+    $ graf copy libB
+    $ ...
+    $ graf main appA.out $(sfg appA)
+    $ graf main appB.out $(sfg appB)
+    $ ...
+    $ graf tapp APP
+    $ ---
+    $ open $(graf_lib)/appX.org # viewing
+    $ ...
+    $ APP ...                   # running
+    $ ...
+EOF
+
+}
+graf_table () 
+{ 
+    : write the TABLE of MAIN function entry points;
+    : for an an APP recorded by GRAF_FUN;
+    : date: 2019-09-21;
+    report_notargcount 1 $# && return 1;
+    set $1 $(graf_lib)/${1}.org;
+    report_notfile $2 && { 
+        ls $(graf_lib)/*.org;
+        return 2
+    };
+    ( rdb_hdr mains org;
+    grep '^.\* ' $2 | sed "
+
+        s/.*\]\[//
+	s/\]\].*/	$1/
+
+      " | sort ) > ${2%.org}.rdb
+}
+graf_default_user () 
+{ 
+    : user-preferred GRAF_{HOME,BIN,LIB} APP_BIN;
+    : the APP_app and APP go to APP_BIN;
+    : date: 2019-11-15;
+    : date: 2019-11-23;
+    : date: 2020-02-01 allow user-defined home function;
+    local home=$(declare -f home >/dev/null && home || echo $HOME);
+    setenv APP_BIN $home/bin;
+    setenv GRAF_LIB $home/graf/lib;
+    setenv GRAF_BIN $home/graf/bin;
+    setenv GRAF_HOME $home/graf;
+    mkdir -p ${APP_BIN} ${GRAF_BIN} ${GRAF_LIB}/src
+}
+graf_user () 
+{ 
+    : replace with user-defined GRAF_ and APP_ environment variables;
+    : date: 2020-02-01 allow user-defined ENVIRONMENT;
+    graf_default_user
+}
+graf_tapp () 
+{ 
+    : write the APP from its FUNCTION;
+    : date: 2020-01-27;
+    graf_copy functionlib;
+    graf_copy stdlib;
+    [[ -f ${1}lib ]] && graf_copy ${1}lib;
+    graf_main $1.out app_is $(${1}_entry);
+    declare -f $( < ${GRAF_LIB}/$1.fun) > ${APP_BIN}/${1}_app;
+    printf "#! /bin/bash\nsource %s\napp_is \"\$@\"\n" ${1}_app | tee ${APP_BIN}/$1;
+    chmod +x ${APP_BIN}/${1}*;
+    llrt ... ${APP_BIN}/${1}* 2> /dev/null
+}
+app_is () 
+{ 
+    : encourage FUNCTIONS to Become an APP;
+    : usage: "app_isa arg ... || return";
+    : caller may have an _INIT function, if so, call it;
+    : also, if CALLER_$1 is a function, call it with args, and return;
+    : history: fam_iam FUNCTION, app FILE;
+    : internal -- parent_subfunction, FUNC return failure = 1.;
+    : to allow parent a default behavior of its own.;
+    : date: 2020-01-27;
+    local parent=$(basename $0);
+    local init=${parent}_init;
+    local func=${parent}_$1;
+    : -- any initialization;
+    isfunction $init && $init 2> /dev/null;
+    : app_trace parent: $parent, init: $init, func: $func;
+    : -- a PARENT_function;
+    isfunction $func && { 
+        shift;
+        : app_trace IS FUNCTION: $func, $*;
+        $func $*;
+        return 1
+    };
+    : implicit functions;
+    : app_trace $#, $*;
+    case $1 in 
+        help)
+            : this is the default help function.;
+            : a user-defined parent_help overrides by calling "parent help";
+            sfg ${parent}_ | pr -t4 1>&2;
+            return 1
+        ;;
+        *)
+            app_trace NOT Help, PARENT: $parent, args: $*;
+            ( printf "$parent %s\n" "[ help |";
+            printf "$(app_kids ${parent}_ | pr -t4 | sed 's/^/        /') \n]\n" ) 1>&2
+        ;;
+    esac
+}
+app_kids () 
+{ 
+    : date: 2020-01-27;
+    app_trace $*;
+    set | grep "^$1" | sed "s/^$1//; s/^_//; s/ [(][)]//"
+}
+app_orgs () 
+{ 
+    : list the APP standards ORG files;
+    : date: 2020-01-30;
+    fun_standard | sed 's/:.*//' | sort -u
+}
+app_starter () 
+{ 
+    : date: 2020-01-30;
+    printf "app_isa $1 \"\$@\"\n"
+}
+family_members () 
+{ 
+    : collect function: family subfunction pairs;
+    : date: 2020-01-30;
+    : date: 2020-02-01;
+    set -- ${1:-justify} $(myname).rdb;
+    row 'subfunction !~ /^$/' < $(family_sub echo) | column > $2;
+    $*
+}
+family_sub () 
+{ 
+    : collect family, subfunction from environment;
+    : date: 2020-01-30;
+    : date: 2020-02-01;
+    set -- ${1:-justify} $(myname).rdb;
+    ( rdb_hdr family subfunction;
+    sfg | grep -v '^_' | sed 's/_/	/' ) | column > $2;
+    $*
+}
+app_fcg () 
+{ 
+    : fcgOrgMode link to functions App Source;
+    printf "#+OPTIONS: ^:nil\n\n";
+    fun_callgraf $(< $1) 2> $2 | sed 's/\([a-zA-Z0-9-][a-zA-Z0-9_-]*\)/[[.\/src\/\1][\1]]/'
+}
+graf_init 1>&2

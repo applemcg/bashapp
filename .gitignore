@@ -1,0 +1,21 @@
+# for the moment, ignore all hidden files AND directories
+# it's possible to include .gitignore with a $ git add -f ...
+
+.*
+.*~
+*#
+
+# ignore these suffixes
+
+*.md~
+*.css
+*.err
+*.html
+*.log
+
+# these directories
+
+ar/
+
+# and these files
+
