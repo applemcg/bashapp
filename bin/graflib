@@ -27,7 +27,7 @@ graf_version ()
 { 
     : tracks the changelog;
     : date: 2020-02-01;
-    echo graf 0.1.0
+    echo graf 0.2.0
 }
 graf_init () 
 { 

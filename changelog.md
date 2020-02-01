@@ -1,7 +1,7 @@
 
   { [README](./README.md) }{ [Changelog](./changelog.md) }{ [Best Example](./egReadme.md) }
 
-# Changelog
+# CHANGELOG
 
 All notable changes to this project are documented in this file.
 
@@ -9,8 +9,10 @@ The format is based on [Keep a Changelog][changelog].  This project
 attempts to adhere to [Semantic Versioning][versioning], nor does
 having made this statement imply future intent.
 
-These introductory sections are the princples above, here for my ease
-of access.
+# DISCUSSION
+
+These introductory sections are copied from the principles above, here
+for my ease of access.
 
 ## Semantic Versioning
 
@@ -26,7 +28,7 @@ extensions to the MAJOR.MINOR.PATCH format.
 
 Seem reasonable.
 
-Here is a perfectly good [example][]  of a changlog.
+Here is a perfectly good [example][]  of a changelog.
 
 ## Guiding Principles
 
@@ -52,11 +54,24 @@ Here is a perfectly good [example][]  of a changlog.
  [changelog]:  https://keepachangelog.com/en/1.0.0/ "Changelog Practice"
  [versioning]: https://semver.org/spec/v2.0.0.html "Semantic Versioning"
  [flapp]:      http://mcgowans.org/pubs/marty3/commonplace/software/README.html "Function, Library, and APP Standards"
- [shdoc]:      https://github.com/applemcg/shelf/blob/master/shdoc.org "Shell Docstring"
+ [shdoc]:      https://github.com/applemcg/shelf/blob/master/shdoc.org "Shell Doc-string"
  [Typora]:     https://typora.io/  "A truly minimal Markdown editor"
  [example]:    https://github.com/ranger/ranger/blob/master/CHANGELOG.md "ranger - Vim inspired file manager"
  
  
+
+# HISTORY
+
+## [0.2.0] - 2020-02-01
+
++ Manually installed executable **graf** and **graf_app** created in the
+  development directory.
+
+### ADDED
+
+    + bin/graf_app
+    + bin/graf
+
 ## [0.1.0] - 2020-02-01
 
 + For unit testing of graf entry points -- The application builder.
