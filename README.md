@@ -1,24 +1,24 @@
  { [README](./README.md) }{ [Changelog](./changelog.md) }{ [Best Example](./egReadme.md) }
 
-## bashapp
+# bashapp
 
-### About
+## About
 
 + Author: Marty McGowan, 
 + License: 
 + Website:  http://mcgowans.org/pubs/marty3/commonplace/software/README.html
 + Download:
-+ Bug Reports;
++ Bug Reports: https://github.com/applemcg/bashapp/issues
 + git clone: http://github.com/applemcg/bashapp.git
 
-### Goals
+## Goals
 
 + in detail http://mcgowans.org/pubs/marty3/commonplace/software/README.html
 + build an application builder from shell function libraries
 + add the **shdoc** facility, (think javadoc, pydoc, ..) to bash
 + foster practice of command line functions
 
-### Features
+## Features
 
 + app -- from a {family}lib write the {family}_app, an executable shell,
   with possible multiple entry points
@@ -27,14 +27,14 @@
 + tags -- for function meta-information
 + assertion checking -- report on pre-condition failure.
 
-### Dependencies
+## Dependencies
 
 + Bash 
 + Python
 + Awk 
 + others listed as discovered -- TBD, a feature
 
-### History
+## History
 
 This REPO started as a bash function library maintenance practice.
 The founding idea is sooner or later in shell programming, a function
@@ -64,7 +64,7 @@ used functions (servers) is a necessary part of the function practice.
 Tools are provided in an *applib* to discover user functions not
 included in a particular application library or commonlib.
 
-## local libraries
+# local libraries
 
 In from general to more specific, these function libraries establish the
 practice
@@ -76,7 +76,7 @@ practice
 
 ### graflib
 
-## documentation
+# documentation
 
 [SHELF]: https://github.com/applemcg/shelf/blob/master/README.org
 [Versioning]: https://semver.org/spec/v2.0.0.html "Semantic Versioning"
