@@ -15,6 +15,7 @@
 
 # these directories
 
+bin/*.d
 ar/
 
 # and these files

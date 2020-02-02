@@ -62,6 +62,19 @@ Here is a perfectly good [example][]  of a changelog.
 
 # HISTORY
 
+## [0.2.2] - 2020-02-02
+
+Close Issue #3, [collect utility functions](https://github.com/applemcg/bashapp/issues/3#issue-558706370)
+
+### ADDED
+
++ utillib, previously untracked but now used functions in graf_app
+	
+### CHANGED
+
++ graf_tapp function to accomodate **utillib**
++ grap_copy uses **runfrom** to accomodate different library home directories
+
 ## [0.2.0] - 2020-02-01
 
 + Manually installed executable **graf** and **graf_app** created in the

@@ -4,10 +4,9 @@ graf_copy ()
     : date: 2019-10-04;
     : date: 2019-11-15;
     : date: 2019-12-14;
-    report_notfile ${1:-/dev/null} && { 
-        comment run from LIBRARYs DIRECTORY;
-        return 1
-    };
+    report_notargcount 1 $# && return 1;
+    runfrom $(dirname $(which $1)) $(basename $1) || return;
+    app_trace PWD: $PWD File: $1;
     graf_prep $1 || { 
         comment graf_prep FAILED;
         return 2
@@ -27,7 +26,7 @@ graf_version ()
 { 
     : tracks the changelog;
     : date: 2020-02-01;
-    echo graf 0.2.1
+    echo graf 0.2.2
 }
 graf_init () 
 { 
@@ -164,11 +163,14 @@ graf_user ()
 }
 graf_tapp () 
 { 
-    : write the APP from its FUNCTION;
+    : write the APP from its APPlib;
+    : allows execepting functionlib, these: STD, UTIL,and the APP lib;
     : date: 2020-01-27;
     graf_copy functionlib;
     graf_copy stdlib;
+    graf_copy utillib;
     [[ -f ${1}lib ]] && graf_copy ${1}lib;
+    : APP_IS is the first in the list of function arguments;
     graf_main $1.out app_is $(${1}_entry);
     declare -f $( < ${GRAF_LIB}/$1.fun) > ${APP_BIN}/${1}_app;
     printf "#! /bin/bash\nsource %s\napp_is \"\$@\"\n" ${1}_app | tee ${APP_BIN}/$1;
@@ -254,6 +256,45 @@ app_fcg ()
 { 
     : fcgOrgMode link to functions App Source;
     printf "#+OPTIONS: ^:nil\n\n";
-    fun_callgraf $(< $1) 2> $2 | sed 's/\([a-zA-Z0-9-][a-zA-Z0-9_-]*\)/[[.\/src\/\1][\1]]/'
+    fun_callgraf $(< $1) 2> $2 | sed '
+
+        s/\([a-zA-Z0-9-][a-zA-Z0-9_-]*\)/[[.\/src\/\1][\1]]/
+    '
 }
-graf_init 1>&2
+app_fun () 
+{ 
+    : recursively w/for_nomar and app_funuses, find all called functions;
+    : date: 2016-11-10;
+    : date: 2018-10-05 key feature set PRIOR, add NEW;
+    : date: 2019-08-29;
+    : app_trace $*;
+    set $* $(for_nomar app_funuses $*);
+    : app_trace N, ...: $# ${*:1:12};
+    echo $* | wpl | sort -u
+}
+app_funcall () 
+{ 
+    : e.g. foreach app_funcall $* PIPE callgraph;
+    : produces pair, calling function called function, from caller.;
+    : consolidate function around FUN_USES.;
+    : date: 2017-08-16;
+    : comment $(myname 3) $(myname 2) "$(myname)( $* )";
+    app_funuses $1 | awk "
+            \$1 ~ /^$1$/ { next }; 
+	    	         { print \"$1\", \$1 }
+        "
+}
+app_funuses () 
+{ 
+    : names the functions the function argument uses,;
+    : omitting _ underscore names -- e.g. local functions;
+    : date: 2017-08-16;
+    : date: 2019-08-29;
+    : date: 2019-11-16 replace foreach fun_alltype RUN fun_words $* with TYPE_WORD;
+    : app_trace $*;
+    type_word $* | awk "
+
+        \$1 !~ /^function$/ || \$2 ~ /^_/  { next; }
+        \$2 !~ /^$1$/                      { print \$2 }
+    "
+}
