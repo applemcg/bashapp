@@ -35,49 +35,6 @@ app_funuses ()
         \$2 !~ /^$1$/                      { print \$2 }
     "
 }
-app_isa () 
-{ 
-    : encourage FUNCTIONS to Become an APP;
-    : usage: "app_isa arg ... || return";
-    : caller may have an _INIT function, if so, call it;
-    : also, if CALLER_$1 is a function, call it with args, and return;
-    : history: fam_iam FUNCTION, app FILE;
-    : internal -- parent_subfunction, FUNC return failure = 1.;
-    : to allow parent a default behavior of its own.;
-    local parent=$(myname 2);
-    local init=${parent}_init;
-    local func=${parent}_$1;
-    : -- any initialization;
-    isfunction $init && $init 2> /dev/null;
-    : app_trace parent: $parent, init: $init, func: $func;
-    : -- a PARENT_function;
-    isfunction $func && { 
-        shift;
-        : app_trace func: $func, $*;
-        $func $*;
-        return 1
-    };
-    function _app_kids () 
-    { 
-        set | grep "^$1" | sed "s/^$1//; s/^_//; s/ [(][)]//"
-    };
-    : implicit functions;
-    : app_trace $#, $*;
-    case $1 in 
-        help)
-            : this is the default help function.;
-            : a user-defined parent_help overrides by calling "parent help";
-            sfg ${parent}_ | pr -t4 1>&2;
-            return 1
-        ;;
-        *)
-            : app_trace parent: $parent, args: $*;
-            ( printf "$parent %s\n" "[ help |";
-            printf "$(_app_kids ${parent}_ | pr -t4 | sed 's/^/        /') \n]\n" ) 1>&2;
-            return
-        ;;
-    esac
-}
 app_pause () 
 { 
     : date: 2019-07-13;
@@ -144,26 +101,6 @@ epoch ()
     [[ -f $1 ]] || return;
     set $(stat -r $1);
     echo ${10}
-}
-f2file () 
-{ 
-    : copy librarys Functions inTO separate FILEs;
-    : need NOT be run from librarys home.;
-    : enables spilling older definitions without;
-    : overwriting current function definitions.;
-    : date: 2017-07-10;
-    : date: 2017-10-26;
-    : date: 2019-10-02;
-    report_notfile ${1:-MissingFirstArgument} && return 1;
-    set -- $1 $(basename $1).d $(awk_file);
-    : app_trace $*;
-    if [ -d $2 ]; then
-        rm -f $2/*;
-    else
-        mkdir $2;
-    fi;
-    : app_trace $*;
-    grep -v '_init 1>&2$' $1 | awk -v dir=$2 -f $3 2> f2file_$$.err
 }
 for_nomar () 
 { 
@@ -389,28 +326,6 @@ paths ()
     : date: 2017-05-29;
     : date: 2017-07-16;
     eval echo \$${1:-PATH} | sed 's/::/:.:/' | tr : '\012'
-}
-runfrom () 
-{ 
-    : date: 2019-09-10;
-    : date: 2019-09-18 add ".";
-    : usage: ~ function args OR return;
-    : app_trace ENTERING: $PWD, $*;
-    : date: 2019-09-28;
-    case $1 in 
-        . | $PWD)
-            : app_trace CONTINUING: $PWD, $*
-        ;;
-        *)
-            pushd $1 1>&2;
-            shift;
-            local cmd=$(myname 2);
-            : app_trace RUNNING: $PWD, cmd: $cmd, $#: $@;
-            $cmd $@;
-            popd 1>&2;
-            return 1
-        ;;
-    esac
 }
 setenv () 
 { 

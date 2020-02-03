@@ -2,7 +2,10 @@ app_fcg ()
 { 
     : fcgOrgMode link to functions App Source;
     printf "#+OPTIONS: ^:nil\n\n";
-    fun_callgraf $(< $1) 2> $2 | sed 's/\([a-zA-Z0-9-][a-zA-Z0-9_-]*\)/[[.\/src\/\1][\1]]/'
+    fun_callgraf $(< $1) 2> $2 | sed '
+
+        s/\([a-zA-Z0-9-][a-zA-Z0-9_-]*\)/[[.\/src\/\1][\1]]/
+    '
 }
 app_fun () 
 { 
@@ -460,16 +463,34 @@ functions ()
 
     ' ${*:--}
 }
+frag_copy () 
+{ 
+    : update the library functions into their API source;
+    : date: 2019-10-04;
+    : date: 2019-11-15;
+    : date: 2019-12-14;
+    report_notargcount 1 $# && return 1;
+    runfrom $(dirname $(which $1)) $(basename $1) || return;
+    app_trace PWD: $PWD File: $1;
+    graf_prep $1 || { 
+        comment graf_prep FAILED;
+        return 2
+    };
+    : -------------------------------------- are linked to the ORG-view --;
+    chmod -w $1.d/.bak/*;
+    ln -f $1.d/.bak/* $(graf_lib)/src
+}
 graf_copy () 
 { 
     : update the library functions into their API source;
     : date: 2019-10-04;
     : date: 2019-11-15;
     : date: 2019-12-14;
-    report_notfile ${1:-/dev/null} && { 
-        comment run from LIBRARYs DIRECTORY;
-        return 1
-    };
+    report_notargcount 1 $# && return 1;
+    local libr=$( which $1 );
+    app_trace libr: $libr, ARG: $1;
+    runfrom $(dirname $libr) $(basename $libr) || return;
+    app_trace PWD: $PWD File: $1;
     graf_prep $1 || { 
         comment graf_prep FAILED;
         return 2
@@ -489,14 +510,15 @@ graf_default_user ()
     setenv APP_BIN $home/bin;
     setenv GRAF_LIB $home/graf/lib;
     setenv GRAF_BIN $home/graf/bin;
-    setenv GRAF_HOME $home/graf
+    setenv GRAF_HOME $home/graf;
+    mkdir -p ${APP_BIN} ${GRAF_BIN} ${GRAF_LIB}/src
 }
 graf_entry () 
 { 
     : entry points to GRAF APP;
     : where TAPP is "The APP";
     : date: 2020-01-22;
-    ${*:-echo} graf_{copy,entry,init,list,tapp,scenario}
+    ${*:-echo} graf_{copy,entry,init,list,tapp,scenario,version}
 }
 graf_init () 
 { 
@@ -565,7 +587,7 @@ graf_scenario ()
     : where an APP is also a function library, but entire to itself;
     : each APP should have an _INIT function, so when SOURCEd,;
     : it offers instructions on how to begin;
-    cat  <<'EOF'
+    cat <<'EOF'
 
     $ graf copy libA
     $ graf copy libB
@@ -584,11 +606,14 @@ EOF
 }
 graf_tapp () 
 { 
-    : write the APP from its FUNCTION;
+    : write the APP from its APPlib;
+    : allows execepting functionlib, these: STD, UTIL,and the APP lib;
     : date: 2020-01-27;
     graf_copy functionlib;
     graf_copy stdlib;
+    graf_copy utillib;
     [[ -f ${1}lib ]] && graf_copy ${1}lib;
+    : APP_IS is the first in the list of function arguments;
     graf_main $1.out app_is $(${1}_entry);
     declare -f $( < ${GRAF_LIB}/$1.fun) > ${APP_BIN}/${1}_app;
     printf "#! /bin/bash\nsource %s\napp_is \"\$@\"\n" ${1}_app | tee ${APP_BIN}/$1;
@@ -599,8 +624,7 @@ graf_user ()
 { 
     : replace with user-defined GRAF_ and APP_ environment variables;
     : date: 2020-02-01 allow user-defined ENVIRONMENT;
-    graf_default_user;
-    mkdir -p ${APP_BIN} ${GRAF_BIN} ${GRAF_LIB}/src
+    graf_default_user
 }
 home () 
 { 
@@ -844,3 +868,4 @@ wpl ()
     report_notpipe && return 1;
     tr -cs 'A-Za-z0-9_' '\n'
 }
+

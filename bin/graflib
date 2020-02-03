@@ -5,7 +5,9 @@ graf_copy ()
     : date: 2019-11-15;
     : date: 2019-12-14;
     report_notargcount 1 $# && return 1;
-    runfrom $(dirname $(which $1)) $(basename $1) || return;
+    local libr=$( which $1 );
+    app_trace libr: $libr, ARG: $1;
+    runfrom $(dirname $libr) $(basename $libr) || return;
     app_trace PWD: $PWD File: $1;
     graf_prep $1 || { 
         comment graf_prep FAILED;
@@ -166,12 +168,14 @@ graf_tapp ()
     : write the APP from its APPlib;
     : allows execepting functionlib, these: STD, UTIL,and the APP lib;
     : date: 2020-01-27;
+    local entry ${1}_entry;
+    report_notfunction $entry && return 1;
     graf_copy functionlib;
     graf_copy stdlib;
     graf_copy utillib;
     [[ -f ${1}lib ]] && graf_copy ${1}lib;
     : APP_IS is the first in the list of function arguments;
-    graf_main $1.out app_is $(${1}_entry);
+    graf_main $1.out app_is $($entry);
     declare -f $( < ${GRAF_LIB}/$1.fun) > ${APP_BIN}/${1}_app;
     printf "#! /bin/bash\nsource %s\napp_is \"\$@\"\n" ${1}_app | tee ${APP_BIN}/$1;
     chmod +x ${APP_BIN}/${1}*;
@@ -183,13 +187,16 @@ app_is ()
     : usage: "app_isa arg ... || return";
     : caller may have an _INIT function, if so, call it;
     : also, if CALLER_$1 is a function, call it with args, and return;
-    : history: fam_iam FUNCTION, app FILE;
+    : and, if the first argument is NOT a function and;
+    : if there is a MAIN function, call it;
     : internal -- parent_subfunction, FUNC return failure = 1.;
     : to allow parent a default behavior of its own.;
     : date: 2020-01-27;
+    : date: 2020-02-02 add default _MAIN function;
     local parent=$(basename $0);
     local init=${parent}_init;
     local func=${parent}_$1;
+    local main=${parent}_main;
     : -- any initialization;
     isfunction $init && $init 2> /dev/null;
     : app_trace parent: $parent, init: $init, func: $func;
@@ -210,6 +217,11 @@ app_is ()
             return 1
         ;;
         *)
+            isfunction $main && { 
+                : app_trace IS FUNCTION: $main, $*;
+                $main "$@";
+                return 1
+            };
             app_trace NOT Help, PARENT: $parent, args: $*;
             ( printf "$parent %s\n" "[ help |";
             printf "$(app_kids ${parent}_ | pr -t4 | sed 's/^/        /') \n]\n" ) 1>&2
@@ -298,3 +310,4 @@ app_funuses ()
         \$2 !~ /^$1$/                      { print \$2 }
     "
 }
+graf_init 1>&2

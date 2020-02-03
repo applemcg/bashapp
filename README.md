@@ -43,7 +43,7 @@ here is to build individual apps into a single function library, with
 all function calls resolved within the library.  Such a library is
 sourced by its executable shell script.
 
-From this date, February 20209, this REPO advances the practice of
+From this date, February 2020, this REPO advances the practice of
 collecting the functions in the callgraph of the handful of functions
 which define the application.  The functions are stored in the
 application library.  As a bonus, the callgraph is rendered as an
@@ -67,14 +67,20 @@ included in a particular application library or commonlib.
 # local libraries
 
 In from general to more specific, these function libraries establish the
-practice
+practice:
 
++ [utillib](./doc/utillib.md) 
 + [stdlib](./doc/stdlib.md) 
 + [graflib](./doc/graf.md) -- the discovery functions: app_...
 
-### stdlib
+The version will remain: v < 1.0.0 until the requirements and user
+documentation are incomplete.
 
 ### graflib
+
+### stdlib
+
+### utillib
 
 # documentation
 
