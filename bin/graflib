@@ -28,7 +28,7 @@ graf_version ()
 { 
     : tracks the changelog;
     : date: 2020-02-01;
-    echo graf 0.2.2
+    echo grafapp 0.2.3 2020-02-04
 }
 graf_init () 
 { 
@@ -175,9 +175,9 @@ graf_tapp ()
     graf_copy utillib;
     [[ -f ${1}lib ]] && graf_copy ${1}lib;
     : APP_IS is the first in the list of function arguments;
-    graf_main $1.out app_is $($entry);
+    graf_main $1.out app_isa $($entry);
     declare -f $( < ${GRAF_LIB}/$1.fun) > ${APP_BIN}/${1}_app;
-    printf "#! /bin/bash\nsource %s\napp_is \"\$@\"\n" ${1}_app | tee ${APP_BIN}/$1;
+    printf "#! /bin/bash\nsource %s\napp_isa \"\$@\"\n" ${1}_app | tee ${APP_BIN}/$1;
     chmod +x ${APP_BIN}/${1}*;
     llrt ... ${APP_BIN}/${1}* 2> /dev/null
 }

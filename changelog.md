@@ -60,7 +60,27 @@ Here is a perfectly good [example][]  of a changelog.
  
  
 
+
 # HISTORY
+
+## [0.2.3] - 2020-02-04 app_isa identifies script or library
+
+### FIXED
+
++ runfrom - simplified directory search, repaired race condition on
+  relative directory
+
+### ADDED
+
++ in **utillib**
+    + proc\_parent{,_test} - anticipates functions in a script
+    + app\_isa - uses proc_parent to determine SCRIPT or Function library
+    + f2file - splits out indivdual functions 
+
+### CHANGED
+
++ deleted graf, graf\_app Outputs - moved to APP_BIN
++ moved app_ functions out of utillib, into {graf,retired,function) libs
 
 ## [0.2.2] - 2020-02-02
 

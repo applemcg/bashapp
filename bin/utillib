@@ -1,376 +1,113 @@
-app_fun () 
+proc_parent_test () 
 { 
-    : recursively w/for_nomar and app_funuses, find all called functions;
-    : date: 2016-11-10;
-    : date: 2018-10-05 key feature set PRIOR, add NEW;
-    : date: 2019-08-29;
-    : app_trace $*;
-    set $* $(for_nomar app_funuses $*);
-    : app_trace N, ...: $# ${*:1:12};
-    echo $* | wpl | sort -u
-}
-app_funcall () 
-{ 
-    : e.g. foreach app_funcall $* PIPE callgraph;
-    : produces pair, calling function called function, from caller.;
-    : consolidate function around FUN_USES.;
-    : date: 2017-08-16;
-    : comment $(myname 3) $(myname 2) "$(myname)( $* )";
-    app_funuses $1 | awk "
-            \$1 ~ /^$1$/ { next }; 
-	    	         { print \"$1\", \$1 }
-        "
-}
-app_funuses () 
-{ 
-    : names the functions the function argument uses,;
-    : omitting _ underscore names -- e.g. local functions;
-    : date: 2017-08-16;
-    : date: 2019-08-29;
-    : date: 2019-11-16 replace foreach fun_alltype RUN fun_words $* with TYPE_WORD;
-    : app_trace $*;
-    type_word $* | awk "
-
-        \$1 !~ /^function$/ || \$2 ~ /^_/  { next; }
-        \$2 !~ /^$1$/                      { print \$2 }
-    "
-}
-app_pause () 
-{ 
-    : date: 2019-07-13;
-    : pause execution, displaying the arguments;
-    read -p "$@. RETURN? " < /dev/tty
-}
-app_trace () 
-{ 
-    : report the CALLER name 0, its args, their caller 1, and the callers caller 2.;
-    : date: 2019-05-04;
-    local call_0="";
-    local call_1="";
-    local call_2="";
-    local cdepth=${#FUNCNAME[@]};
-    [[ $cdepth -gt 1 ]] && call_0=${FUNCNAME[1]};
-    [[ $cdepth -gt 2 ]] && call_1=${FUNCNAME[2]};
-    [[ $cdepth -gt 3 ]] && call_2=${FUNCNAME[3]};
-    app_pause "CLEAN ME UP: $call_0( $* ) $call_1 $call_2"
-}
-args_uniq () 
-{ 
-    : date: 2017-03-26;
-    : date: 2018-10-29;
-    : app_trace $*;
-    : date: 2019-08-29;
-    awk '
-    BEGIN {
-	    for (i=1; i < ARGC; i++) {
-                 j = ARGV[i];
-                 if (!printed[j]++) {
-                     printf "%s ", j;
-		 }
-	     }
-	     printf "\n"
-	  }
-    ' $*
-}
-awk_file () 
-{ 
-    : returns file name of awk script;
-    : ~ [name {defaulting to calling function, i.e MYNAME 2}];
-    : date: 2018-07-30;
-    : date: 2018-10-05;
-    : date: 2019-09-07 No Relative paths;
-    awk_files | grep -v '^\.' | grep /${1:-$(myname 2)}.awk
-}
-awk_files () 
-{ 
-    : lists the awk scripts found in a lib,;
-    : where "lib" is a sibling directory to a "bin";
-    : on the users PATH. see BITMELD;
-    : date: 2018-07-30;
-    : date: 2018-10-05;
-    for lib in $(paths | sed 's/bin$/lib/');
-    do
-        ls -1 $lib/*.awk;
-    done 2> /dev/null
-}
-epoch () 
-{ 
-    : date: 2017-07-10;
-    : date: 2017-07-18;
-    : app_trace $*;
-    [[ -f $1 ]] || return;
-    set $(stat -r $1);
-    echo ${10}
-}
-for_nomar () 
-{ 
-    : continue executing first arg as command,;
-    : until number of returned arguments is unchanged.;
-    : date: 2016-11-10;
-    : date: 2019-03-10 isolating the command saves ignoring it in the loop;
-    : app_trace $*;
-    : date: 2019-08-29;
-    local cmmd=$1;
-    shift;
-    app_trace CMMD: $cmmd, ARGS: $*;
-    while true; do
-        local num=$#;
-        set $(args_uniq $* $($cmmd $*));
-        app_trace AFTER $CMMD "num: $num, $#";
-        [[ $num -eq $# ]] && break;
-    done;
-    app_trace RETURN $*;
-    echo $*
-}
-foreach () 
-{ 
-    : ~ command arg ...;
-    : executes COMMAND foreach arg ...;
-    : date: 2017-05-12;
-    : date: 2017-07-16;
-    : date: 2019-10-28 QUOTE the ARG;
-    report_notargcount 1 $# command ... && return 1;
-    for arg in "${@:2}";
-    do
-        $1 "$arg";
-    done
-}
-fun_alltype () 
-{ 
-    : returns TAB-separated TYPE of exection object NAME;
-    : e.g. function, file, builtin, keyword;
-    : date: 2019-08-29;
-    printf "%s\t%s\n" $(type -t $1) $1
-}
-fun_callgraf () 
-{ 
-    : writes callgraph of function arguments;
-    : date: 2018-11-05;
-    function app_funcall () 
-    { 
-        : e.g. foreach app_funcall $* PIPE callgraph;
-        : produces pair, calling function called function, from caller.;
-        : consolidate function around FUN_USES.;
-        : date: 2017-08-16;
-        : comment $(myname 3) $(myname 2) "$(myname)( $* )";
-        app_funuses $1 | awk "
-            \$1 ~ /^$1$/ { next }; 
-	    	         { print \"$1\", \$1 }
-        "
-    };
-    report_notargcount 1 $# && return 1;
-    rm -f .funuses.out;
-    app_trace foreach app_funcall $*;
-    foreach app_funcall $* | tee $(home)/lib/$1.gin | callgraph
-}
-fun_deparenify () 
-{ 
-    : separate all "( ... )" sub-expressions;
-    : compare and contrast with _subexpr;
-    : date 2019-10-10;
-    sed 's/[(]/& /g; s/[)]/ &/g' $*;
-    unset fun_olddeparenify
-}
-fun_olddeparenify () 
-{ 
-    : compare and contrast with _subexpr;
-    : date: 2019-09-20;
-    sed 's/[(]\([^)]*\)[)]/( \1 )/g' $*
-}
-fun_starter () 
-{ 
-    : generate STDERR-directed function calls to any_INIT functions;
-    : date: 2018-02-16;
-    report_notfile $1 && return 1;
-    for fun in $(functions $1 | grep _init$ | sort);
-    do
-        printf "%s 1>&2\n" $fun;
-    done
-}
-fun_words () 
-{ 
-    : date: 2019-09-04;
-    : date: 2019-09-20;
-    declare -f $* | grep -v '^ *: ' | fun_deparenify | tr -s ' \t' '\n' | grep '^[a-zA-Z0-9_]' | sed 's/;$//' | sort -u
-}
-functions () 
-{ 
-    : date: 2017-05-29;
-    : date: 2017-08-10;
-    awk '
-         $2 ~ /^[(][)]$/           && \
-       ( NF == 2 || $3 ~ /^[{]$/ ) && \
-       !printed[$1]++             { print $1 }
-
-    ' ${*:--}
-}
-home () 
-{ 
-    : ~ set or fetch the name of the portable File System;
-    : intended for DROPBOX, but lets use a portable idea.;
-    case $# in 
-        0)
-            : ${ALT_HOME:-$HOME}
-        ;;
-        *)
-            [[ -d $1 ]] && ALT_HOME=$1
-        ;;
-    esac;
-    export ALT_HOME;
-    echo ${ALT_HOME:-$HOME}
-}
-indir () 
-{ 
-    : date: 2017-05-29;
-    : date: 2018-10-09;
-    report_notdirectory $1 && return 1;
-    pushd $1 > /dev/null;
-    eval ${@:2};
-    popd 1>&2 > /dev/null
-}
-isfunction () 
-{ 
-    : ~ function;
-    : returns TRUTH of argument as FUNCTION;
-    declare -f ${1:-/dev/null} > /dev/null
-}
-lib () 
-{ 
-    : a big fuss over ALT_HOME not in the ENVIRONMENT;
-    : todo: see if we can eliminate its use in sh-bang;
-    : app_trace home: $(home);
-    : app_trace ALT_HOME: ${ALT_HOME};
-    ${*:-echo} $(home)/lib
-}
-lib_tidy () 
-{ 
-    : removes duplicated functions using latest definitions and backsup the library;
-    : appends initialization if necessary, issues WC comparison message,;
-    : replaces LIB_CRUNCH to remove redundant definitions from a library;
-    : date: 2018-12-23;
-    : date: 2019-11-23;
-    report_notfile $1 && return 1;
-    backup_lib $1;
-    source $1;
-    { 
-        declare -f $(functions $1);
-        fun_starter $1
-    } > .l;
-    mv .l $1;
+    : test both facets of proc_parent: terminal shell or SCRIPT?;
+    : date: 2020-02-03;
+    set -- ./proc_bash proc_parent;
+    echo FUNCTION $($2);
+    echo =====;
+    printf "#! /usr/bin/env bash\n%s\n%s\n" "$(qf $2)" $2 > $1;
     chmod +x $1;
-    backup_lib $1
+    echo SCRIPT $($1);
+    echo =====;
+    echo the function;
+    qf $(myname) | sed 's/^/    /';
+    echo ----;
+    echo the script:;
+    sed 's/^/    /' $1
 }
-llrt () 
+app_isa () 
 { 
-    : list Long, Reverse Time order;
-    : date: 2019-04-21 default current directory;
-    ls -lrt ${*:-.}
-}
-myname () 
-{ 
-    : ~ [n];
-    : returns name of caller OR callers caller ...;
-    : date: 2018-02-16;
-    echo ${FUNCNAME[${1:-1}]}
-}
-nf () 
-{ 
-    : date: 2017-05-11;
-    : date: 2017-07-18;
+    : encourage FUNCTIONS to Become an APP;
+    : usage: "app_isaa arg ... || return";
+    : caller may have an _INIT function, if so, call it;
+    : also, if CALLER_$1 is a function, call it with args, and return;
+    : and, if the first argument is NOT a function and;
+    : if there is a MAIN function, call it;
+    : internal -- parent_subfunction, FUNC return failure = 1.;
+    : to allow parent a default behavior of its own.;
+    : date: 2020-01-27;
+    : date: 2020-02-02 add default _MAIN function;
+    local parent=$(proc_parent $(myname 2));
+    local init=${parent}_init;
+    local func=${parent}_$1;
+    local main=${parent}_main;
+    : -- any initialization;
+    isfunction $init && $init 2> /dev/null;
+    : app_trace parent: $parent, init: $init, func: $func, main: $main;
+    : -- a PARENT_function;
+    isfunction $func && { 
+        shift;
+        : app_trace IS FUNCTION: $func, $*;
+        $func $*;
+        return 1
+    };
+    : implicit functions;
+    : app_trace $#, $*;
     case $1 in 
-        *awk)
-            AWK=$1;
-            shift
-        ;;
-        *)
-            AWK=$( which gawk || which nawk || which awk )
-        ;;
-    esac;
-    case $1 in 
-        lt)
-            $AWK "NF < ${2:-5}"
-        ;;
-        gt)
-            $AWK "NF > ${2:-1}"
-        ;;
-        eq)
-            $AWK "NF == ${2:-5}"
-        ;;
-        ne)
-            $AWK "NF != ${2:-5}"
-        ;;
         help)
-            comment $0 "[lt|gt|eq|ne||* [NN]]"
-        ;;
-        "")
-            $AWK NF
+            : this is the default help function.;
+            : a user-defined parent_help overrides by calling "parent help";
+            sfg ${parent}_ | pr -t4 1>&2;
+            return 1
         ;;
         *)
-            $AWK '{ print NF, $0}'
+            isfunction $main && { 
+                : app_trace IS FUNCTION: $main, $*;
+                $main "$@";
+                return 1
+            };
+            app_trace NOT Help, PARENT: $parent, args: $*;
+            ( printf "$parent %s\n" "[ help |";
+            printf "$(app_kids ${parent}_ | pr -t4 | sed 's/^/        /') \n]\n" ) 1>&2
         ;;
     esac
 }
-onlyfiles () 
+f2file () 
 { 
-    : date: 2018-10-09;
-    : date: 2019-11-28;
-    : date: 2019-11-29;
-    for a in $(stdin_orargs ${*:-* .*});
-    do
-        [[ -f $a ]] && echo $a;
-    done
-}
-paths () 
-{ 
-    : ~ returns PATH components, a line at a time;
-    : date: 2017-05-29;
-    : date: 2017-07-16;
-    eval echo \$${1:-PATH} | sed 's/::/:.:/' | tr : '\012'
-}
-setenv () 
-{ 
-    : ~ NAME value ...;
-    : exports NAME to the environment,;
-    : set to value ...;
-    : date: 2017-08-23;
-    : date: 2018-02-16;
-    [[ $# -lt 1 ]] && return;
-    local na=$1;
-    shift;
-    eval $na=\"$*\";
-    export $na
-}
-sfg () 
-{ 
-    : date: 2019-12-21 back to our roots, Set Functions Grep;
-    set | functions | grep "${@:-.}"
-}
-stdin_orargs () 
-{ 
-    : treat STDIN as args, OR echo any args, default to CALLER;
-    : date: 2019-03-24;
-    : date: 2019-11-29;
-    [[ -p /dev/stdin ]] && cat || echo ${*:-$(myname 2)}
-}
-timestamp () 
-{ 
-    : ~ fileA fileB;
-    : stamp B with TIME of A;
-    : date: 2016-10-02;
-    : test for file A existing;
-    : date: 2018-10-09;
-    report_notfile $1 && return 1;
+    : copy librarys Functions inTO separate FILEs;
+    : need NOT be run from librarys home.;
+    : enables spilling older definitions without;
+    : overwriting current function definitions.;
+    : date: 2017-07-10;
+    : date: 2017-10-26;
+    : date: 2019-10-02;
+    report_notfile ${1:-MissingFirstArgument} && return 1;
+    set -- $1 $(basename $1).d $(awk_file);
     : app_trace $*;
-    touch -t $(date -r $(epoch $1)  +%Y%m%d%H%M.%S) $2
+    if [ -d $2 ]; then
+        rm -f $2/*;
+    else
+        mkdir $2;
+    fi;
+    : app_trace $*;
+    grep -v '_init 1>&2$' $1 | awk -v dir=$2 -f $3 2> ~/tmp/f2file_$$.err
 }
-type_word () 
+proc_parent () 
 { 
-    : date: 2019-11-16;
-    report_notfunction ${1:-/dev/null} && return 1;
-    foreach fun_alltype $(fun_words $*) | nf gt 1
+    : which are we running, a terminal shell or a SCRIPT?;
+    : date: 2020-02-03;
+    case $0 in 
+        -bash)
+            echo ${1:-$(myname 2)}
+        ;;
+        *)
+            basename $0
+        ;;
+    esac
 }
-wpl () 
+runfrom () 
 { 
-    report_notpipe && return 1;
-    tr -cs 'A-Za-z0-9_' '\n'
+    : usage: ~ DIRECTORY function args OR return;
+    : date: 2019-09-10;
+    : date: 2020-02-04 simplify, test using indir;
+    app_trace ENTERING: $PWD, $*;
+    [[ $PWD = $(indir $1 pwd) ]] && return;
+    app_trace HUNTING: $PWD, DIR: $1.;
+    pushd $1 1>&2;
+    shift;
+    local cmd=$(myname 2);
+    app_trace RUNNING: $PWD, cmd: $cmd, $#: $@;
+    $cmd $@;
+    popd 1>&2;
+    return 1
 }
