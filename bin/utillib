@@ -69,10 +69,9 @@ f2file ()
     : enables spilling older definitions without;
     : overwriting current function definitions.;
     : date: 2017-07-10;
-    : date: 2017-10-26;
-    : date: 2019-10-02;
+    : date: 2020-02-04 save DIRECTORY in home/lib
     report_notfile ${1:-MissingFirstArgument} && return 1;
-    set -- $1 $(basename $1).d $(awk_file);
+    set -- $1 $(home)/lib/$(basename $1).d $(awk_file);
     : app_trace $*;
     if [ -d $2 ]; then
         rm -f $2/*;
@@ -81,6 +80,7 @@ f2file ()
     fi;
     : app_trace $*;
     grep -v '_init 1>&2$' $1 | awk -v dir=$2 -f $3 2> ~/tmp/f2file_$$.err
+    echo $2
 }
 proc_parent () 
 { 

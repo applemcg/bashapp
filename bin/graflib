@@ -67,7 +67,7 @@ graf_main ()
     local funs=${file%.org}.fun;
     local fuse=${file%.org}.use;
     local erro=${file%.org}.err;
-    app_trace handle: $handle, ARGS ${*:2:12};
+    app_trace handle: $handle, ARGS $*;
     app_fun $* | tee $funs | grep -v ^_ > $fuse;
     app_trace $(wc -l $funs $fuse);
     app_fcg $fuse $erro > $file;
@@ -168,18 +168,22 @@ graf_tapp ()
     : write the APP from its APPlib;
     : allows execepting functionlib, these: STD, UTIL,and the APP lib;
     : date: 2020-01-27;
-    local entry ${1}_entry;
+    local app=$1;
+    shift;
+    local entry=${app}_entry;
     report_notfunction $entry && return 1;
     graf_copy functionlib;
     graf_copy stdlib;
     graf_copy utillib;
-    [[ -f ${1}lib ]] && graf_copy ${1}lib;
+    [[ -f ${app}lib ]] && graf_copy ${app}lib;
     : APP_IS is the first in the list of function arguments;
-    graf_main $1.out app_isa $($entry);
-    declare -f $( < ${GRAF_LIB}/$1.fun) > ${APP_BIN}/${1}_app;
-    printf "#! /bin/bash\nsource %s\napp_isa \"\$@\"\n" ${1}_app | tee ${APP_BIN}/$1;
-    chmod +x ${APP_BIN}/${1}*;
-    llrt ... ${APP_BIN}/${1}* 2> /dev/null
+    set -- $($entry);
+    app_trace graf_main $app.out app_isa $*;
+    graf_main $app.out app_isa $*;
+    declare -f $( < ${GRAF_LIB}/$app.fun) > ${APP_BIN}/${app}_app;
+    printf "#! /bin/bash\nsource %s\napp_isa \"\$@\"\n" ${app}_app | tee ${APP_BIN}/$app;
+    chmod +x ${APP_BIN}/${app}{,_app};
+    llrt ... ${APP_BIN}/${app}{,_app} 2> /dev/null
 }
 app_is () 
 { 

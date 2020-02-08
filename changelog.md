@@ -63,6 +63,18 @@ Here is a perfectly good [example][]  of a changelog.
 
 # HISTORY
 
+## [0.2.4] - 2020-02-08 add backuplib
+
+## ADDED 
+
++ **backuplib** -- simply add the lib, convert to an app later
+
+## CHANGED
+
++ f2file now puts function copies in $(home)/lib/{ library }.d and the
+  ERRor file in ~/tmp/
+    
+
 ## [0.2.3] - 2020-02-04 app_isa identifies script or library
 
 ### FIXED
