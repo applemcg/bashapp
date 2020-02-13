@@ -63,6 +63,12 @@ Here is a perfectly good [example][]  of a changelog.
 
 # HISTORY
 
+## [0.2.5] - 2020-02-13 add backuplib
+
+### FIXED
+
++ graf_tapp -- copy the APPlib before the standard libs: function, std, util
+
 ## [0.2.4] - 2020-02-08 add backuplib
 
 ## ADDED 

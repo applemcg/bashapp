@@ -28,7 +28,7 @@ graf_version ()
 { 
     : tracks the changelog;
     : date: 2020-02-01;
-    echo grafapp 0.2.3 2020-02-04
+    echo grafapp 0.2.5  2020-02-13
 }
 graf_init () 
 { 
@@ -169,13 +169,17 @@ graf_tapp ()
     : allows execepting functionlib, these: STD, UTIL,and the APP lib;
     : date: 2020-01-27;
     local app=$1;
+    [[ -f ${app}lib ]] && {
+
+        graf_copy ${app}lib;
+    }	
     shift;
     local entry=${app}_entry;
     report_notfunction $entry && return 1;
     graf_copy functionlib;
     graf_copy stdlib;
     graf_copy utillib;
-    [[ -f ${app}lib ]] && graf_copy ${app}lib;
+
     : APP_IS is the first in the list of function arguments;
     set -- $($entry);
     app_trace graf_main $app.out app_isa $*;
