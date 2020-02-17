@@ -63,6 +63,19 @@ Here is a perfectly good [example][]  of a changelog.
 
 # HISTORY
 
+## [0.2.6] - 2020-02-17 backup_main replaces backup function, now an APP
+
+## CHANGED
+
++ `app_starter`  adds `{lib}_init` calls
++ `backup files, sync` and `allfiles` used `backup` now use `backup main`
++ `backup_entry` adds `lib`, and `allfiles`
++ `f2file` returns the destination directory, used in `graf prep`
++ `graf_prep` returns directory to `graf_copy`, REVISIT interface
++ `isfunction` moved to *stdlib*, `setenv` to *utillib*
++ `isfunction` to **stdlib**
++ `setenv` to **utilib**
+
 ## [0.2.5] - 2020-02-13 add backuplib
 
 ### FIXED

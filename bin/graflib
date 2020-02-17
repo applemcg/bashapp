@@ -6,16 +6,19 @@ graf_copy ()
     : date: 2019-12-14;
     report_notargcount 1 $# && return 1;
     local libr=$( which $1 );
-    app_trace libr: $libr, ARG: $1;
+    : app_trace libr: $libr, ARG: $1;
     runfrom $(dirname $libr) $(basename $libr) || return;
-    app_trace PWD: $PWD File: $1;
-    graf_prep $1 || { 
+    : app_trace PWD: $PWD File: $1;
+    graf_prep $1 > ~/tmp/dir.$$ || { 
         comment graf_prep FAILED;
         return 2
     };
     : -------------------------------------- are linked to the ORG-view --;
-    chmod -w $1.d/.bak/*;
-    ln -f $1.d/.bak/* $(graf_lib)/src
+    libr=$(tail -1 ~/tmp/dir.$$);
+    : app_trace libr: $libr, ARG: $1;
+    report_notdirectory $libr && return 3;
+    chmod -w $libr/.bak/*;
+    ln -f $libr/.bak/* $(graf_lib)/src
 }
 graf_entry () 
 { 
@@ -28,7 +31,7 @@ graf_version ()
 { 
     : tracks the changelog;
     : date: 2020-02-01;
-    echo grafapp 0.2.5  2020-02-13
+    ${@:-echo} $(myname) 0.2.6 2020-02-17
 }
 graf_init () 
 { 
@@ -67,11 +70,11 @@ graf_main ()
     local funs=${file%.org}.fun;
     local fuse=${file%.org}.use;
     local erro=${file%.org}.err;
-    app_trace handle: $handle, ARGS $*;
+    : app_trace handle: $handle, ARGS $*;
     app_fun $* | tee $funs | grep -v ^_ > $fuse;
-    app_trace $(wc -l $funs $fuse);
+    : app_trace $(wc -l $funs $fuse);
     app_fcg $fuse $erro > $file;
-    app_trace $(wc -l $erro $file);
+    : app_trace $(wc -l $erro $file);
     comment $file $funs
 }
 graf_mainhelp () 
@@ -80,6 +83,7 @@ graf_mainhelp ()
     : where an APP has a TABLE in the GRAF_LIB,;
     : written by GRAF_MAIN;
     : date: 2019-10-04;
+    : date: 2019-11-15;
     set -- $(graf_lib)/$1.rdb;
     report_notfile $1 && return 1;
     foreach shd_tohelp $(cat $1 | column mains| headoff)
@@ -94,12 +98,21 @@ graf_prep ()
         comment run from LIBARY: $1 DIRECTORY;
         return 1
     };
-    app_trace PWD: $PWD, ARGS: $*;
-    lib_tidy $1;
-    f2file $1;
-    report_notdirectory $1.d && return 2;
+    : app_trace PWD: $PWD, ARGS: $*;
+    graf_tidy $1;
+    local dir=$(f2file $1);
+    : app_trace DIR: $dir;
+    report_notdirectory $dir && { 
+        app_trace DIR $dir;
+        return 2
+    };
     : ---------------------------------------- the Individual Functions --;
-    indir $1.d backup_allfiles
+    pushd $dir;
+    app_trace PWD: $PWD, Which Backup: $(which backup);
+    $(which backup) allfiles;
+    popd;
+    : app_trace RETURN $dir;
+    echo $dir
 }
 graf_scenario () 
 { 
@@ -129,13 +142,14 @@ graf_table ()
     : write the TABLE of MAIN function entry points;
     : for an an APP recorded by GRAF_FUN;
     : date: 2019-09-21;
+    : date: 2019-11-15;
     report_notargcount 1 $# && return 1;
     set $1 $(graf_lib)/${1}.org;
     report_notfile $2 && { 
         ls $(graf_lib)/*.org;
         return 2
     };
-    ( rdb_hdr mains org;
+    ( rdb_hdr mains graf;
     grep '^.\* ' $2 | sed "
 
         s/.*\]\[//
@@ -169,17 +183,15 @@ graf_tapp ()
     : allows execepting functionlib, these: STD, UTIL,and the APP lib;
     : date: 2020-01-27;
     local app=$1;
-    [[ -f ${app}lib ]] && {
-
-        graf_copy ${app}lib;
-    }	
+    [[ -f ${app}lib ]] && { 
+        graf_copy ${app}lib
+    };
     shift;
     local entry=${app}_entry;
     report_notfunction $entry && return 1;
     graf_copy functionlib;
     graf_copy stdlib;
     graf_copy utillib;
-
     : APP_IS is the first in the list of function arguments;
     set -- $($entry);
     app_trace graf_main $app.out app_isa $*;
@@ -239,7 +251,7 @@ app_is ()
 app_kids () 
 { 
     : date: 2020-01-27;
-    app_trace $*;
+    : app_trace $*;
     set | grep "^$1" | sed "s/^$1//; s/^_//; s/ [(][)]//"
 }
 app_orgs () 
@@ -250,8 +262,14 @@ app_orgs ()
 }
 app_starter () 
 { 
-    : date: 2020-01-30;
-    printf "app_isa $1 \"\$@\"\n"
+    : for an APP, generate Executable function calls to all _INIT functions;
+    : similar to fun_starter for LIBs;
+    : date: 2019-11-24;
+    report_notfile $1 && return 1;
+    for fun in $(functions $1 | grep _init$ | sort);
+    do
+        printf "%s 1>&2\n" $fun;
+    done
 }
 family_members () 
 { 

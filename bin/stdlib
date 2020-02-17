@@ -547,4 +547,10 @@ shdoc ()
     };
     foreach _shdoc ${*:-$(myname)}
 }
+isfunction () 
+{ 
+    : ~ function;
+    : returns TRUTH of argument as FUNCTION;
+    declare -f ${1:-/dev/null} > /dev/null
+}
 report_init 1>&2

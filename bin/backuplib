@@ -4,11 +4,6 @@ backup_main ()
     : app_trace $*;
     foreach backup_one $*
 }
-backup () 
-{ 
-    : app_trace $*;
-    app_isa $* || return
-}
 backup_allfiles () 
 { 
     : BACKUP every FILE in the directory;
@@ -19,7 +14,7 @@ backup_allfiles ()
     : todo: and all users of any changes;
     : date: 2019-12-28;
     backup_sync 2> /dev/null;
-    backup $(foreach backup_needed $(onlyfiles) 2>/dev/null)
+    backup_main $(foreach backup_needed $(onlyfiles) 2>/dev/null)
 }
 backup_copies () 
 { 
@@ -74,7 +69,7 @@ backup_dirver ()
 backup_entry () 
 { 
     : date: 2020-01-21;
-    ${*:-echo} backup_{main,files,sync,ver,entry}
+    ${*:-echo} backup_{main,lib,{all,}files,sync,ver,entry}
 }
 backup_files () 
 { 
@@ -148,7 +143,7 @@ backup_lib ()
     : date: 2019-06-01;
     : app_trace $*;
     report_notfile ${1:-"No Named File"} && return 1;
-    backup $*;
+    backup_main $*;
     chmod +x $*
 }
 backup_named () 
@@ -196,7 +191,7 @@ backup_sync ()
     };
     for file in $(backup_outdated);
     do
-        backup $bak/$file;
+        backup_main $bak/$file;
         rm -f $bak/$file;
     done
 }
