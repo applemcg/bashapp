@@ -553,4 +553,47 @@ isfunction ()
     : returns TRUTH of argument as FUNCTION;
     declare -f ${1:-/dev/null} > /dev/null
 }
+shd_getlibr () 
+{ 
+    : collect date-stamps from functions, by args;
+    : date: 2016-10-01;
+    : test for file arguments;
+    : libr: stdlib;
+    : 0 -- all funtions;
+    : N -- library ... function ...;
+    : date: 2017-03-11;
+    : add RE to allow date: field;
+    : date: 2018-01-17;
+    : date: 2018-02-16;
+    : app_trace $*;
+    : date: 2019-05-30;
+    : date: 2020-02-19;
+    : date: 2020-02-20;
+    shd_collect $* | awk '
+                          # { print $0 > "/dev/stderr"; }
+        $2 ~ /^\(\)$/     { fun = $1 } 
+
+        $1 ~ /^:$/ && $2 ~ /^libr:*$/ {
+                             sub(": libr: ","")
+                             sub(";","")
+			  #  print $0 > "/dev/stderr";
+                             printf "%s\t%s\n", fun, $0
+			  }
+    '
+}
+shd_collect () 
+{ 
+    : collect functions, defaulting to SET;
+    : uses: fun_allbody;
+    : libr: stdlib;
+    : date: 2020-02-20;
+    case $# in 
+        0)
+            set
+        ;;
+        *)
+            fun_allbody ${*:--}
+        ;;
+    esac
+}
 report_init 1>&2

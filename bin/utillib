@@ -100,13 +100,13 @@ runfrom ()
     : usage: ~ DIRECTORY function args OR return;
     : date: 2019-09-10;
     : date: 2020-02-04 simplify, test using indir;
-    app_trace ENTERING: $PWD, $*;
+    : app_trace ENTERING: $PWD, $*;
     [[ $PWD = $(indir $1 pwd) ]] && return;
-    app_trace HUNTING: $PWD, DIR: $1.;
+    : app_trace HUNTING: $PWD, DIR: $1.;
     pushd $1 1>&2;
     shift;
     local cmd=$(myname 2);
-    app_trace RUNNING: $PWD, cmd: $cmd, $#: $@;
+    : app_trace RUNNING: $PWD, cmd: $cmd, $#: $@;
     $cmd $@;
     popd 1>&2;
     return 1

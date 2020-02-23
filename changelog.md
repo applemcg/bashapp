@@ -61,11 +61,23 @@ Here is a perfectly good [example][]  of a changelog.
  
 
 
+
 # HISTORY
+
+## [0.2.7] - 2020-02-23 graf_tidy shd_{collect,getlibr}
+
++ `utillib` removed app_trace from `runfrom`
++ `stdlib` factored `shd_collect` from `shd_getlibr` for reuse.
++ `graflib` factored `graf_tidy` from untracked `lib_tidy` 
+   and added `mk_graf_version` using this changelog
+   
+### TODO generalize the mk_ ... _version function
+
++ add `mk_version` to `utillib`
 
 ## [0.2.6] - 2020-02-17 backup_main replaces backup function, now an APP
 
-## CHANGED
+### CHANGED
 
 + `app_starter`  adds `{lib}_init` calls
 + `backup files, sync` and `allfiles` used `backup` now use `backup main`

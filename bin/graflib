@@ -29,9 +29,7 @@ graf_entry ()
 }
 graf_version () 
 { 
-    : tracks the changelog;
-    : date: 2020-02-01;
-    ${@:-echo} $(myname) 0.2.6 2020-02-17
+    echo graf_version 0.2.7 2020-02-23
 }
 graf_init () 
 { 
@@ -336,4 +334,26 @@ app_funuses ()
         \$2 !~ /^$1$/                      { print \$2 }
     "
 }
+graf_tidy () 
+{ 
+    : clean duplicated functions to use latest definitions;
+    : appends any necesary initialization;
+    : uses: fun_starter;
+    : libr: graflib;
+    : date: 2020-02-20;
+    source $1;
+    { 
+        declare -f $(functions $1);
+        fun_starter $1
+    } > .l;
+    mv .l $1
+}
 graf_init 1>&2
+mk_graf_version () 
+{ 
+    : hard-coded to generate graf_version from changelog;
+    : libr: graflib;
+    set -- $(grep '^## \[' changelog.md | sed 1q | sed 's/.. .//; s/\] - / /');
+    eval "graf_version () { echo graf_version $1 $2; }";
+    declare -f graf_version
+}
