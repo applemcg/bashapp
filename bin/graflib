@@ -1,9 +1,3 @@
-lib_touch () 
-{ 
-    : watch graf-building files;
-    ls -alrtd $HOME/{git/bashapp/bin/*lib,Dropbox/{lib/*.d,bin/functionlib}};
-    : app_trace RETURN $*
-}
 graf_copy () 
 { 
     : update the library functions into their API source;
