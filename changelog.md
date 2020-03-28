@@ -68,20 +68,19 @@ Here is a perfectly good [example][]  of a changelog.
 
 Added or Changed.
 
-### Libraries
+### Libraries, Features
 
 + `graf` -- now builds into APP, using `app_isa` in the `graf_app`
 + `backup` -- now builds into an APP, using `app_isa` in the `backup_app`
 + `utillib` -- functions from FUNCTIONLIB, objective: all functions sourced here.
-
 + backup.texi -- anticipate INFO 
 + tagging functions, anticipate SHDOC
 + _test functions in graflib
 + text picture of GRAF Tree
 
-### Functionsn
+### Functions
 
-Some in the `utillib`:
+Some of the functions in `utillib`:
 
 + `awk_file{,s}` -- anticipate locating all system resources
 + `email_comment` -- who am i
@@ -95,7 +94,7 @@ Some in the `utillib`:
 + `nf` -- AWKs NF: lt, gt, eq, ne, help, NF, 
 + `setenv` -- function for the CSH converts
 + `sfg` -- Show the Function names matching Grep pattern
-+ ``
+
 ## [0.2.7] - 2020-02-23 graf_tidy shd_{collect,getlibr}
 
 + `utillib` removed app_trace from `runfrom`
