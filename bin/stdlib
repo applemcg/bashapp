@@ -21,6 +21,13 @@ quietly ()
     : date: 2018-10-09;
     $@ 2> /dev/null
 }
+file_mode () 
+{ 
+    : return FILEs octal permission;
+    report_notfile ${1:-/dev/null} && return 1;
+    set -- $(stat -r $1);
+    echo $3
+}
 report_copyright () 
 { 
     : date: 2019-04-22;
@@ -596,4 +603,4 @@ shd_collect ()
         ;;
     esac
 }
-report_init 1>&2
+report_init  1>&2

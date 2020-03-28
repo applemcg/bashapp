@@ -1,24 +1,152 @@
+lib_touch () 
+{ 
+    : watch graf-building files;
+    ls -alrtd $HOME/{git/bashapp/bin/*lib,Dropbox/{lib/*.d,bin/functionlib}};
+    : app_trace RETURN $*
+}
 graf_copy () 
 { 
     : update the library functions into their API source;
     : date: 2019-10-04;
-    : date: 2019-11-15;
-    : date: 2019-12-14;
+    : date: 2020-03-22 pulled up sub-function;
+    function _do_graf_copy () 
+    { 
+        : it was easier to make this a sub-function called by INDIR,;
+        : rather than use RUNFROM;
+        app_trace ENTRY $*;
+        graf_prep $1 > ~/tmp/dir.$$ || { 
+            app_trace graf_prep FAILED;
+            cat ~/tmp/dir.$$ 1>&2;
+            unset $(myname);
+            return 2
+        };
+        : ------------------------------------------ are linked to the ORG-view --;
+        _do_graf_libr $1 $(tail -1 ~/tmp/dir.$$)
+    };
+    function _do_graf_libr () 
+    { 
+        app_trace ENTRY $*;
+        local libr=$2;
+        local appdir=$(needir ${APP_LIB}/${1%lib}_app.d);
+        report_notdirectory $libr && { 
+            unset $(myname);
+            return 3
+        };
+        ls -lisart $libr/.bak 1>&2;
+        app_trace SAW $libr/.bak;
+        chmod -w $libr/.bak/*;
+        : --------------------------------------- LINK the .BAK to the API SRC --;
+        ln -f $libr/.bak/* $(graf_lib)/src;
+        ls -lisart $(graf_lib)/src | tail -24 1>&2;
+        app_trace SAW $(graf_lib)/src;
+        unset $(myname)
+    };
+    app_trace ENTRY $*;
     report_notargcount 1 $# && return 1;
     local libr=$( which $1 );
-    : app_trace libr: $libr, ARG: $1;
-    runfrom $(dirname $libr) $(basename $libr) || return;
-    : app_trace PWD: $PWD File: $1;
-    graf_prep $1 > ~/tmp/dir.$$ || { 
-        comment graf_prep FAILED;
+    indir $(dirname $libr) _do_graf_copy $(basename $libr);
+    return $?
+}
+graf_prep () 
+{ 
+    : update the library functions into NAME.D directory, retain modification time;
+    : BACKUP facilitates mod time retention;
+    : date: 2019-12-14;
+    : date: 2019-12-28;
+    app_trace ENTRY: $PWD, $*;
+    report_notfile ${1:-/dev/null} && { 
+        comment run from LIBARY: $1 DIRECTORY;
+        return 1
+    };
+    graf_tidy $1;
+    : ---------------------------------------- F2FILE returns DIRectory --;
+    local dir=$(f2file $1);
+    report_notdirectory $dir && { 
+        app_trace DIR $dir;
         return 2
     };
-    : -------------------------------------- are linked to the ORG-view --;
-    libr=$(tail -1 ~/tmp/dir.$$);
-    : app_trace libr: $libr, ARG: $1;
-    report_notdirectory $libr && return 3;
-    chmod -w $libr/.bak/*;
-    ln -f $libr/.bak/* $(graf_lib)/src
+    : ---------------------------------------- the Individual Functions --;
+    : app_trace pushd $dir;
+    pushd $dir;
+    app_trace $(which backup) allfiles;
+    $(which backup) allfiles;
+    popd;
+    app_trace RETURN $dir;
+    echo $dir
+}
+graf_tidy () 
+{ 
+    : clean duplicated functions to use latest definitions;
+    : appends any necesary initialization;
+    : uses: fun_starter;
+    : libr: graflib;
+    : date: 2020-02-20;
+    app_trace ENTRY $*;
+    source $1;
+    { 
+        declare -f $(functions $1);
+        fun_starter $1
+    } > .l;
+    mv .l $1;
+    chmod +x $1;
+    app_trace $(ls -l $1)
+}
+graf_tapp () 
+{ 
+    : write the APP from its APPlib;
+    : allows execepting functionlib, these: STD, UTIL,and the APP lib;
+    : uses: graf_copy;
+    : date: 2020-01-27;
+    app_trace ENTRY $*;
+    report_notargcount 1 $# APP or applib && return 1;
+    : apps libraries usually come from a LIB;
+    local app=${1%lib};
+    local entry=${app}_entry;
+    report_notfunction $entry && return 1;
+    : -------------------------------------- Copy libraries to SRC tree --;
+    graf_copy ${app}lib || return 2;
+    graf_copy functionlib || return 5;
+    graf_copy stdlib || return 3;
+    graf_copy utillib || return 4;
+    : ---------------------------------- APP_ISA is the MAIN in any APP --;
+    set -- app_isa $($entry);
+    : ------------------------------------------------- create the GRAF --;
+    app_trace WAKE UP ==========******======== graf_main $app.out $*;
+    graf_main $app.out $*;
+    graf_app $app
+}
+graf_app () 
+{ 
+    : CAT the FUNCTIONS in $(graf_lib) /src/ listed in $app.fun to _APP;
+    app_trace ENTRY $*;
+    : ---------------------------------------- LINK the .BAK to the APP_DIR --;
+    local app=$1;
+    shift;
+    set -- $(graf_lib)/src cat $(cat  $(graf_lib)/$app.fun);
+    app_trace indir $* TO ${APP_BIN}/${app}_app;
+    indir $* > ${APP_BIN}/${app}_app;
+    printf "#! /bin/bash\nsource %s\napp_isa \"\$@\"\n" ${app}_app | tee ${APP_BIN}/$app;
+    chmod +x ${APP_BIN}/${app}{,_app};
+    llrt ... ${APP_BIN}/${app}{,_app} 2> /dev/null
+}
+graf_copy_test () 
+{ 
+    set -- ${1:-graflib};
+    graf_copy $1
+}
+graf_app_test () 
+{ 
+    set -- ${1:-graf};
+    graf_app $1
+}
+graf_main_test () 
+{ 
+    set -- ${1:-graf};
+    app_trace ENTRY $*;
+    local app=${1%lib};
+    local entry=${app}_entry;
+    set -- app_isa $($entry);
+    graf_main $app.out $*
 }
 graf_entry () 
 { 
@@ -54,9 +182,10 @@ graf_main ()
     : produces the call graph for a list of functions, the MAIN program;
     : an optional first argument NAME.out gives the HANDLE of the output files;
     : the list is collected by app_fun fun ... tee .fun.app;
+    : FUNS lists all the FUNCTIONS, FUSE exclude any _NAME. not sure why;
     :;
     : date: 2019-09-03;
-    app_trace $*;
+    app_trace TIME to WAKE UP ENTRY $*;
     report_notargcount 1 $# "[ handle.out ] function ..." && return 1;
     local handle=$1;
     [[ $1 = ${1%.out}.out ]] && { 
@@ -68,11 +197,11 @@ graf_main ()
     local funs=${file%.org}.fun;
     local fuse=${file%.org}.use;
     local erro=${file%.org}.err;
-    : app_trace handle: $handle, ARGS $*;
+    app_trace handle: $handle, ARGS $*;
     app_fun $* | tee $funs | grep -v ^_ > $fuse;
-    : app_trace $(wc -l $funs $fuse);
-    app_fcg $fuse $erro > $file;
-    : app_trace $(wc -l $erro $file);
+    app_trace $(wc -l $funs $fuse);
+    app_fcg $funs $erro > $file;
+    app_trace $(wc -l $erro $file);
     comment $file $funs
 }
 graf_mainhelp () 
@@ -85,32 +214,6 @@ graf_mainhelp ()
     set -- $(graf_lib)/$1.rdb;
     report_notfile $1 && return 1;
     foreach shd_tohelp $(cat $1 | column mains| headoff)
-}
-graf_prep () 
-{ 
-    : update the library functions into NAME.D directory, retain modification time;
-    : BACKUP facilitates mod time retention;
-    : date: 2019-12-14;
-    : date: 2019-12-28;
-    report_notfile ${1:-/dev/null} && { 
-        comment run from LIBARY: $1 DIRECTORY;
-        return 1
-    };
-    : app_trace PWD: $PWD, ARGS: $*;
-    graf_tidy $1;
-    local dir=$(f2file $1);
-    : app_trace DIR: $dir;
-    report_notdirectory $dir && { 
-        app_trace DIR $dir;
-        return 2
-    };
-    : ---------------------------------------- the Individual Functions --;
-    pushd $dir;
-    app_trace PWD: $PWD, Which Backup: $(which backup);
-    $(which backup) allfiles;
-    popd;
-    : app_trace RETURN $dir;
-    echo $dir
 }
 graf_scenario () 
 { 
@@ -159,45 +262,40 @@ graf_default_user ()
 { 
     : user-preferred GRAF_{HOME,BIN,LIB} APP_BIN;
     : the APP_app and APP go to APP_BIN;
+    : the user is free to define TWO functions:;
+    :;
+    : + home { ... } overrides $HOME;
+    : + graf_user { ... } to define the following ENVIRONMENT variables;
+    :;
     : date: 2019-11-15;
-    : date: 2019-11-23;
     : date: 2020-02-01 allow user-defined home function;
+    : date: 2020-03-04 add APP_LIB and layout picture;
+    :;
     local home=$(declare -f home >/dev/null && home || echo $HOME);
     setenv APP_BIN $home/bin;
-    setenv GRAF_LIB $home/graf/lib;
-    setenv GRAF_BIN $home/graf/bin;
+    setenv APP_LIB $home/lib;
     setenv GRAF_HOME $home/graf;
-    mkdir -p ${APP_BIN} ${GRAF_BIN} ${GRAF_LIB}/src
+    setenv GRAF_LIB ${GRAF_HOME}/lib;
+    setenv GRAF_BIN ${GRAF_HOME}/bin;
+    : ------------------------------------------- The GRAF Tree --;
+    mkdir -p $(home)/{{lib,bin},graf/{lib,bin/src}};
+    :;
+    : "         +               ";
+    : "	 +------+------+        ";
+    : "	 +      +      +        ";
+    : " lib    bin   graf       ";
+    : "                +        ";
+    : "            +---+--+     ";
+    : "            +      +     ";
+    : "           lib    bin    ";
+    : "                   +     ";
+    : "                  src    "
 }
 graf_user () 
 { 
-    : replace with user-defined GRAF_ and APP_ environment variables;
+    : replace THIS function with user-defined GRAF_ and APP_ environment variables;
     : date: 2020-02-01 allow user-defined ENVIRONMENT;
     graf_default_user
-}
-graf_tapp () 
-{ 
-    : write the APP from its APPlib;
-    : allows execepting functionlib, these: STD, UTIL,and the APP lib;
-    : date: 2020-01-27;
-    local app=$1;
-    [[ -f ${app}lib ]] && { 
-        graf_copy ${app}lib
-    };
-    shift;
-    local entry=${app}_entry;
-    report_notfunction $entry && return 1;
-    graf_copy functionlib;
-    graf_copy stdlib;
-    graf_copy utillib;
-    : APP_IS is the first in the list of function arguments;
-    set -- $($entry);
-    app_trace graf_main $app.out app_isa $*;
-    graf_main $app.out app_isa $*;
-    declare -f $( < ${GRAF_LIB}/$app.fun) > ${APP_BIN}/${app}_app;
-    printf "#! /bin/bash\nsource %s\napp_isa \"\$@\"\n" ${app}_app | tee ${APP_BIN}/$app;
-    chmod +x ${APP_BIN}/${app}{,_app};
-    llrt ... ${APP_BIN}/${app}{,_app} 2> /dev/null
 }
 app_is () 
 { 
@@ -273,7 +371,6 @@ family_members ()
 { 
     : collect function: family subfunction pairs;
     : date: 2020-01-30;
-    : date: 2020-02-01;
     set -- ${1:-justify} $(myname).rdb;
     row 'subfunction !~ /^$/' < $(family_sub echo) | column > $2;
     $*
@@ -282,7 +379,6 @@ family_sub ()
 { 
     : collect family, subfunction from environment;
     : date: 2020-01-30;
-    : date: 2020-02-01;
     set -- ${1:-justify} $(myname).rdb;
     ( rdb_hdr family subfunction;
     sfg | grep -v '^_' | sed 's/_/	/' ) | column > $2;
@@ -330,25 +426,10 @@ app_funuses ()
     : app_trace $*;
     type_word $* | awk "
 
-        \$1 !~ /^function$/ || \$2 ~ /^_/  { next; }
-        \$2 !~ /^$1$/                      { print \$2 }
+        \$1 !~ /^function$/ { next; }
+        \$2 !~ /^$1$/       { print \$2 }
     "
 }
-graf_tidy () 
-{ 
-    : clean duplicated functions to use latest definitions;
-    : appends any necesary initialization;
-    : uses: fun_starter;
-    : libr: graflib;
-    : date: 2020-02-20;
-    source $1;
-    { 
-        declare -f $(functions $1);
-        fun_starter $1
-    } > .l;
-    mv .l $1
-}
-graf_init 1>&2
 mk_graf_version () 
 { 
     : hard-coded to generate graf_version from changelog;
@@ -357,3 +438,4 @@ mk_graf_version ()
     eval "graf_version () { echo graf_version $1 $2; }";
     declare -f graf_version
 }
+graf_init  1>&2

@@ -64,6 +64,38 @@ Here is a perfectly good [example][]  of a changelog.
 
 # HISTORY
 
+## [0.3.0] - 2020-03-26 graf, backup APPS
+
+Added or Changed.
+
+### Libraries
+
++ `graf` -- now builds into APP, using `app_isa` in the `graf_app`
++ `backup` -- now builds into an APP, using `app_isa` in the `backup_app`
++ `utillib` -- functions from FUNCTIONLIB, objective: all functions sourced here.
+
++ backup.texi -- anticipate INFO 
++ tagging functions, anticipate SHDOC
++ _test functions in graflib
++ text picture of GRAF Tree
+
+### Functionsn
+
+Some in the `utillib`:
+
++ `awk_file{,s}` -- anticipate locating all system resources
++ `email_comment` -- who am i
++ `for_nomar` -- recursively collect stuff.  here, the callgraph for functios 
++ `foreach` -- CMMD args ...
++ `fun_starter` -- prepare to execute _init functions in a library
++ `home` -- alternative to HOME
++ `indir` -- CMMD 
++ `mkdir` -- implements the -p flag by default, 
++ `myname` -- Nth calling parent function, default 1 = who called me?
++ `nf` -- AWKs NF: lt, gt, eq, ne, help, NF, 
++ `setenv` -- function for the CSH converts
++ `sfg` -- Show the Function names matching Grep pattern
++ ``
 ## [0.2.7] - 2020-02-23 graf_tidy shd_{collect,getlibr}
 
 + `utillib` removed app_trace from `runfrom`
@@ -163,6 +195,7 @@ Close Issue #3, [collect utility functions](https://github.com/applemcg/bashapp/
 
     + bin/graflib
     + bin/stdlib	
+
 
 
 

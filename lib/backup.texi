@@ -1,0 +1,214 @@
+\input texinfo
+@settitle The Only Backup You'll Ever Need
+
+@copying
+
+This is the User's Manual for the Only Backup You'll Ever Need.
+
+Copyright @copyright{} 2020 Just Yet-Another Testing Lab, JYATL.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+@end copying
+
+@include backupversion.txt
+
+@c ............................................................	Title Page ..
+@titlepage
+@title Backup Any File
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@c Output the table of the contents at the beginning.
+@contents
+
+@c ............................................................	Top Node ..
+@ifnottex
+@node Top, Backup Commands, (dir), (dir)
+@top Backup Any File
+
+This manual documents the Only Backup You'll Ever Need.
+
+(version @value{VERSION}, @value{UPDATED}).
+@end ifnottex
+
+The backup commmand 
+@menu
+* Backup Commands::         The challenge
+* Environment Variables::   Customizing
+* User Discovery::          Inspect the functions
+* Download Install::       
+* Index::                   Complete index.
+
+@end menu
+
+
+
+@c ............................................................	Commands ..
+@node Backup Commands, Environment Variables, Top, Top
+@chapter Backup Commands
+@cindex commands, backup
+@cindex sub-function
+@cindex datatype
+@cindex main
+
+Backup saves backup copies of CHANGED files, without regard to datatype.
+
+    $ backup file.txt file.jpg file.dat ...
+
+is the short-cut for
+
+    $ backup main  file.txt file.jpg file.dat ...
+
+This menu shows the backup sub-functions which may be used as the
+first argument to the backup command.
+
+
+@menu
+
+
+* allfiles::    when backing up everythign
+* copyright::   
+* depth::       how deep, many backup levels
+* directory::   the customizable backup sub-directory
+* files::       the current backup list
+* lib::         for executables
+* main::        there's a shortcut
+* paper::       README
+* sync::        are some backup files no longer needed
+* ver::         and Versions too.
+
+@end menu
+
+@c ............................................................	allfiles ..
+@node allfiles, copyright, Backup Commands, Backup Commands
+@section allfiles
+
+A large directory, with many files, all of which need backup, allfiles
+uses some shortcuts to trim the list of files to backup.   This takes
+no further arguments.
+
+    $ backup allfiles
+
+is equivalent to
+
+    $ backup *
+
+but likely much faster, especially when few files have been changed.
+
+@c ............................................................	copyright ..
+@node copyright, depth, allfiles, Backup Commands
+@section copyright
+@cindex copyright
+
+    $ backup  copyright
+
+prints a copyright notice.
+
+@c .............................................................. depth	..
+@node depth, directory, copyright, Backup Commands
+@section depth
+@cindex depth
+@cindex directoty
+@cindex ver
+
+     $ backup depth
+
+This returns a number of recursive backups being retained. To see the
+files at a certain depth of backup
+
+    $ dir=$(backup directory)
+    
+    $ find $dir/$dir/$dir/$dir/$dir/$dir/$dir/$dir/$dir/ -type f
+
+A good practice is to save a VERSION from time to time and trim the
+ssubtreebackups.   See the ver function.
+
+@c .......................................................... directory ..
+@node directory, files, depth, Backup Commands
+@section directory
+@cindex directory
+@cindex customizatin
+
+The backup directory has a default, a sub-directory.  A user may
+customize the name of the backup and version sub-directories from any
+subtree of their account.  See the Environment Variables to set the
+customization.
+
+The command:
+
+    $ backup directory
+
+returns the local backup name
+
+@c .............................................................. files	 ..
+@node files, lib, directory, Backup Commands
+@section files
+@cindex files
+
+@c ................................................................ lib	..
+@node lib, main, files, Backup Commands
+@section lib
+
+
+This feature is OBSOLESCENT.
+
+It has been used in the past explicitly set the backup file permission
+to EXECUTABLE. 
+
+@c ............................................................... main	..
+@node main, paper, lib, Backup Commands
+@section main
+
+The longhand version of the backup command.
+
+     $ backup main filea fileb ...
+
+is the formal function for the 'no argument' version of the
+the program.   This for historical reasons
+
+
+@c .............................................................. paper	..
+@node paper, sync, main, Backup Commands
+@section paper
+
+The backup paper
+
+     $ backup paper
+
+function 
+
+@c ............................................................... sync	..
+@node sync, ver, paper, Backup Commands
+@section sync
+
+@c ................................................................ ver	..
+@node ver,  , sync, Backup Commands
+@section ver
+
+@c .............................................. Environment Variables	..
+@node Environment Variables, Download Install, Backup Commands, Top
+@chapter Environment Variables
+
+@c ................................................... Download Install	..
+@node Download Install, User Discovery, Environment Variables, Top
+@chapter Download Install
+
+@c ................................................... Download Install	..
+@node User Discovery, Index, Download Install, Top
+@chapter User Discovery
+
+@c ............................................................	Index ..
+@node Index,  , User Discovery, Top
+@unnumbered Index
+
+@printindex cp
+
+@bye
+
+
+

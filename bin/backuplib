@@ -1,32 +1,32 @@
-backup_main () 
+backup_copyright () 
 { 
-    : ~ backup file ...;
-    : app_trace $*;
-    foreach backup_one $*
+    : date: 2019-04-22;
+    : date: 2020-03-22;
+    comment "Copyright (C) 2005-2020, JYATL - Just Yet Another Testing Lab";
+    email_comment
 }
 backup_allfiles () 
 { 
     : BACKUP every FILE in the directory;
     : BACKUP_NEEDED reduces the list, to only those needed;
+    : used: graf_prep;
     : date: 2019-09-28;
     : done: rename backup_dir backup_allfiles, then dir_backup to backup_directory;
     : todo: rename ver_backup to backup_version, and another collisions;
     : todo: and all users of any changes;
     : date: 2019-12-28;
-    backup_sync 2> /dev/null;
-    backup_main $(foreach backup_needed $(onlyfiles) 2>/dev/null)
-}
-backup_copies () 
-{ 
-    : for the backup files, the name of the top copy;
-    : date: 2019-12-28;
-    backup_files | sed "s/^/$(backup_directory)\//"
-}
-backup_copyright () 
-{ 
-    : date: 2019-04-22;
-    comment "Copyright (C) 2005-2019, JYATL - Just Yet Another Testing Lab";
-    email_comment
+    function backup_needed () 
+    { 
+        : date: 2019-09-28;
+        cmp -s $1 .bak/$1 || echo $1
+    };
+    app_trace ENTRY $*;
+    backup_sync;
+    local files=$(onlyfiles);
+    app_trace A files;
+    $files;
+    backup_main $(foreach backup_needed $files);
+    unset backup_needed
 }
 backup_depth () 
 { 
@@ -42,10 +42,19 @@ backup_directory ()
     : former dir_backup;
     : date: 2019-11-16;
     : date: 2019-12-28;
-    set -- $(backup_dirver);
+    set -- $(_backup_dirver);
     echo $1
 }
-backup_dirver () 
+version_directory () 
+{ 
+    : returns relative name of locale-dependent VERSION Directory;
+    : former dir_version;
+    : date: 2019-11-16;
+    : date: 2019-12-28;
+    set -- $(_backup_dirver);
+    echo $2
+}
+_backup_dirver () 
 { 
     : default BACKUP is .bak ... directory;
     : default VERSION is .ver directory;
@@ -55,9 +64,10 @@ backup_dirver ()
     : date: 2019-11-16;
     :;
     : ${USER_BACKUP_AREA:=/dev/null};
-    set .bak .ver back version;
+    : ${ALTERNATE_BACKUP_DIRS:=back version};
+    set .bak .ver ${ALTERNATE_BACKUP_DIRS};
     case $PWD in 
-        */WantaNonDotName* | */sbmcwebsite* | *${USER_BACKUP_AREA}*)
+        */WantaNonDotName* | *${USER_BACKUP_AREA}*)
             : shift off the defaults;
             shift 2
         ;;
@@ -66,11 +76,6 @@ backup_dirver ()
     setenv DIR_VERSION $2 > /dev/null;
     echo $*
 }
-backup_entry () 
-{ 
-    : date: 2020-01-21;
-    ${*:-echo} backup_{main,lib,{all,}files,sync,ver,entry}
-}
 backup_files () 
 { 
     : return the names of the local files with a backup copy;
@@ -78,101 +83,59 @@ backup_files ()
     : date: 2019-12-28;
     indir $(backup_directory) onlyfiles
 }
-backup_files_not () 
+backup_main () 
 { 
-    : date: 2017-01-28;
-    : date: 2017-03-23;
-    shell_onlyfiles $(command comm -23 <(ls) <(backup_files))
-}
-backup_here () 
-{ 
-    : recursively backup a changed file in the backup tree;
-    : This is the centerpiece of BACKUP process. for changed files, descend;
-    : the backup tree, moving successive copies down the tree, creating an;
-    : empty slot in the top backup location making a copy of the current;
-    : file in that spot.;
-    : date: 2019-12-28;
-    :;
-    : app_trace $*;
-    case ${FUNCNAME[1]} in 
-        backup_one | backup_here)
-
-        ;;
-        *)
-            comment "USAGE backup_here isn't called by backup_{one,here}";
-            return 1
-        ;;
-    esac;
-    set $1 $(backup_directory) ${2:-$PWD};
-    : app_trace ENTERING: $PWD, $*;
-    [[ -d $2 ]] || mkdir $2;
-    [[ $3 == $PWD ]] && { 
-        cmp $1 $2/$1 2> /dev/null 1>&2 && return
-    };
-    [[ -f $2/$1 ]] && { 
-        cd $2;
-        : app_trace DESCENDING: $PWD, $*;
-        backup_here $1 $3
-    } || { 
-        : app_trace MOVING: $PWD, $*;
-        mv $1 $2/$1;
+    : ~ backup file ...;
+    function backup_here () 
+    { 
+        : recursively backup a changed file in the backup tree;
+        : This is the centerpiece of BACKUP process. for changed files, descend;
+        : the backup tree, moving successive copies down the tree, creating an;
+        : empty slot in the top backup location making a copy of the current;
+        : file in that spot.;
+        : date: 2019-12-28;
+        :;
+        set $1 $(backup_directory) ${2:-$PWD};
+        : app_trace ENTRY: $*;
+        [[ -d $2 ]] || mkdir $2;
         [[ $3 == $PWD ]] && { 
-            : : app_trace FINISHED: $PWD, $*;
-            cp $2/$1 $1;
-            timestamp $2/$1 $1;
-            return
+            cmp $1 $2/$1 2> /dev/null 1>&2 && return
         };
-        cd ..;
-        : app_trace ASCENDING: $PWD, $*;
-        backup_here $1 $3
-    }
-}
-backup_init () 
-{ 
-    : default BACKUP is .bak ... directory;
-    : default VERSION is .ver directory;
-    : to use NON-DOT directory names, set USER_BACKUP_AREA;
-    : to place in the herarchy like "/Windows/Fileshare";
-    : start by clearing any default;
-    : date: 2019-11-16;
-    :;
-    : moved into non-manufactured function backup_dirver, ...
-}
-backup_lib () 
-{ 
-    : date: 2019-06-01;
+        local mode=$(file_mode $1);
+        : app_trace file: $1, mode: $mode;
+        [[ -f $2/$1 ]] && { 
+            cd $2;
+            : app_trace DESCENDING: $PWD, $*;
+            backup_here $1 $3
+        } || { 
+            : app_trace MOVING: $PWD, $*;
+            mv $1 $2/$1;
+            [[ $3 == $PWD ]] && { 
+                cp $2/$1 $1;
+                timestamp $2/$1 $1;
+                chmod $mode $1;
+                app_trace PERMISSIONS: $(ls -l $1);
+                return
+            };
+            cd ..;
+            : app_trace ASCENDING: $PWD, $*;
+            backup_here $1 $3
+        }
+    };
+    function backup_one () 
+    { 
+        : allows backup from another directory.;
+        : avoid temptation to include as opening steps in backup_here,;
+        : date: 2019-12-20 -- notfile test;
+        report_notfile ${1:-/dev/null} && return 1;
+        : app_trace ENTRY $*;
+        pushd $(dirname $1) > /dev/null;
+        backup_here $(basename $1);
+        popd > /dev/null
+    };
     : app_trace $*;
-    report_notfile ${1:-"No Named File"} && return 1;
-    backup_main $*;
-    chmod +x $*
-}
-backup_named () 
-{ 
-    : date: 2019-10-12;
-    grep -l -f <(backup_files) $(backup_files)
-}
-backup_needed () 
-{ 
-    : date: 2019-09-28;
-    cmp -s $1 .bak/$1 || echo $1
-}
-backup_one () 
-{ 
-    : allows backup from another directory.;
-    : avoid temptation to include as opening steps in backup_here,;
-    : date: 2019-12-20 -- notfile test;
-    : app_trace $*;
-    report_notfile ${1:-/dev/null} && return 1;
-    pushd $(dirname $1) > /dev/null;
-    backup_here $(basename $1);
-    popd > /dev/null
-}
-backup_outdated () 
-{ 
-    : lists backup_files no longer in current directory;
-    : date: 2019-12-09;
-    : date: 2019-12-28;
-    comm -23 <( ignore pushd $(backup_directory); onlyfiles; ignore popd) <(onlyfiles)
+    foreach backup_one $*;
+    : unset backup_{here,one}
 }
 backup_paper () 
 { 
@@ -184,6 +147,12 @@ backup_sync ()
     : pushes files no-longer backed up one level down the backup tree.;
     : app_trace $*;
     : date: 2019-12-28;
+    function backup_outdated () 
+    { 
+        : lists backup_files no longer in current directory;
+        : date: 2019-12-28;
+        comm -23 <( ignore pushd $(backup_directory); onlyfiles; ignore popd) <(onlyfiles)
+    };
     local bak=$(backup_directory);
     [[ $(basename ${PWD%/$bak}) == $bak ]] && { 
         dirs 1>&2;
@@ -195,25 +164,22 @@ backup_sync ()
         rm -f $bak/$file;
     done
 }
-backup_tilde () 
+backup_outdated () 
 { 
-    : date: 2019-09-07;
-    comm -23 <(ls *~  | sed 's/~$//') <(backup_files)
+    : lists backup_files no longer in current directory;
+    : date: 2019-12-09;
+    : date: 2019-12-28;
+    comm -23 <( ignore pushd $(backup_directory); onlyfiles; ignore popd) <(onlyfiles)
 }
-backup_toclean () 
+backup_local () 
 { 
-    : date: 2019-09-07;
-    find .ver .bak/.bak/.bak -type f | xargs ls -t | awk '/\.ver/ { ver = 1; } ver && /\.bak/'
+    : apps have ENTRY functions and LOCAL functions;
+    ${*:-echo} backup_{copies,local,entry,dirver,here,one,needed,outdated}
 }
-backup_tosync () 
+backup_entry () 
 { 
-    : date: 2019-10-12;
-    for dir in $(find $(home) -type d -name .ver );
-    do
-        ignore pushd $(dirname $dir);
-        backup_named 2>&1 | sed "s=$=	$PWD=";
-        ignore popd;
-    done
+    : date: 2020-01-21;
+    ${*:-echo} backup_{main,entry,depth,directory,{all,}files,sync,ver,copyright,paper}
 }
 backup_ver () 
 { 
@@ -223,6 +189,12 @@ backup_ver ()
     : date 2017-03-05;
     : date 2019-04-28 remove opional argument name for version;
     : date: 2019-12-28;
+    function backup_copies () 
+    { 
+        : for the backup files, the name of the top copy;
+        : date: 2019-12-28;
+        backup_files | sed "s/^/$(backup_directory)\//"
+    };
     local ver=$(version_directory);
     local bak=$(backup_directory);
     report_notdirectory $bak && return 1;
@@ -233,4 +205,9 @@ backup_ver ()
     : app_trace ln -f backup_copies $1;
     ln -f $(backup_copies) $1
 }
-backup_init 1>&2
+backup_init () 
+{ 
+    app_trace $* backup_{obsolete,outdated}_lib;
+    unset backup_{obsolete,outdated}_lib
+}
+backup_init  1>&2

@@ -108,7 +108,11 @@ runfrom ()
     local cmd=$(myname 2);
     : app_trace RUNNING: $PWD, cmd: $cmd, $#: $@;
     $cmd $@;
+    : app_trace HAVE RUN: $PWD, $#: $@;
     popd 1>&2;
+    : app_trace POPPED: $PWD, $#: $@;
+    cdx 1>&2;
+    : dapp_trace CLEARED: $PWD, $#: $@;
     return 1
 }
 setenv () 
@@ -123,4 +127,415 @@ setenv ()
     shift;
     eval $na=\"$*\";
     export $na
+}
+app_pause () 
+{ 
+    : date: 2019-07-13;
+    : pause execution, displaying the arguments;
+    read -p "$@. RETURN? " < /dev/tty
+}
+app_trace () 
+{ 
+    : report the CALLER name 0, its args, their caller 1, and the callers caller 2.;
+    : date: 2019-05-04;
+    local call_0="";
+    local call_1="";
+    local call_2="";
+    local cdepth=${#FUNCNAME[@]};
+    [[ $cdepth -gt 1 ]] && call_0=${FUNCNAME[1]};
+    [[ $cdepth -gt 2 ]] && call_1=${FUNCNAME[2]};
+    [[ $cdepth -gt 3 ]] && call_2=${FUNCNAME[3]};
+    app_pause "CLEAN ME UP: $call_0( $* ) $call_1 $call_2"
+}
+args_uniq () 
+{ 
+    : date: 2017-03-26;
+    : date: 2018-10-29;
+    : app_trace $*;
+    : date: 2019-08-29;
+    awk '
+    BEGIN {
+	    for (i=1; i < ARGC; i++) {
+                 j = ARGV[i];
+                 if (!printed[j]++) {
+                     printf "%s ", j;
+		 }
+	     }
+	     printf "\n"
+	  }
+    ' $*
+}
+awk_file () 
+{ 
+    : returns file name of awk script;
+    : ~ [name {defaulting to calling function, i.e MYNAME 2}];
+    : date: 2018-07-30;
+    : date: 2018-10-05;
+    : date: 2019-09-07 No Relative paths;
+    awk_files | grep -v '^\.' | grep /${1:-$(myname 2)}.awk
+}
+awk_files () 
+{ 
+    : lists the awk scripts found in a lib,;
+    : where "lib" is a sibling directory to a "bin";
+    : on the users PATH. see BITMELD;
+    : date: 2018-07-30;
+    : date: 2018-10-05;
+    for lib in $(paths | sed 's/bin$/lib/');
+    do
+        ls -1 $lib/*.awk;
+    done 2> /dev/null
+}
+cdx () 
+{ 
+    : removes duplicates from directory stack list;
+    : date: 2017-07-10;
+    : date: 2018-05-17;
+    : date: 2020-03-20 major reorganization;
+    :;
+    function _cds () 
+    { 
+        : collect unique directory stack;
+        awk '
+    	 !p[$0]++ {
+            gsub(/\\*  */,"\\ ")
+	    line[nr++] = $0
+	    }
+        END {
+	      # pre-decrement since post increment
+	      # GT 0 since dirs -c leaves the 0th directory
+	      while(--nr > 0) print line[nr]
+	    }
+    '
+    };
+    function _esc () 
+    { 
+        : writes command to quiety tuck each directory down the stack;
+        : exposing the stack on completion;
+        awk '
+        { printf "pushd %s > /dev/null; pushd >/dev/null\n", $0 }
+    END { printf "dirs\n" }	
+    '
+    };
+    set -- $(needir ~/tmp)/.{dirs,source};
+    dirs -p -l | _cds | tee $1 | _esc > $2;
+    dirs -c > /dev/null;
+    : clear all but the top of the stack;
+    source $2;
+    unset _{cds,esc};
+    rm -f $1 $2
+}
+email_comment () 
+{ 
+    : date: 2019-04-22;
+    comment "mailto:edu <dot> MIT {dot} alum {aT} martymcgowan"
+}
+epoch () 
+{ 
+    : date: 2017-07-10;
+    : date: 2017-07-18;
+    : app_trace $*;
+    [[ -f $1 ]] || return;
+    set $(stat -r $1);
+    echo ${10}
+}
+file_mode () 
+{ 
+    : return FILEs octal permission;
+    : date: 2020-03-22;
+    report_notfile ${1:-/dev/null} && return 1;
+    set -- $(stat -r $1);
+    echo $3
+}
+for_nomar () 
+{ 
+    : continue executing first arg as command,;
+    : until number of returned arguments is unchanged.;
+    : date: 2016-11-10;
+    : date: 2019-03-10 isolating the command saves ignoring it in the loop;
+    : app_trace $*;
+    : date: 2019-08-29;
+    local cmmd=$1;
+    shift;
+    app_trace CMMD: $cmmd, ARGS: $*;
+    while true; do
+        local num=$#;
+        set $(args_uniq $* $($cmmd $*));
+        app_trace AFTER $CMMD "num: $num, $#";
+        [[ $num -eq $# ]] && break;
+    done;
+    app_trace RETURN $*;
+    echo $*
+}
+foreach () 
+{ 
+    : ~ command arg ...;
+    : executes COMMAND foreach arg ...;
+    : date: 2017-05-12;
+    : date: 2017-07-16;
+    : date: 2019-10-28 QUOTE the ARG;
+    report_notargcount 1 $# command ... && return 1;
+    for arg in "${@:2}";
+    do
+        $1 "$arg";
+    done
+}
+fun_alltype () 
+{ 
+    : returns TAB-separated TYPE of exection object NAME;
+    : e.g. function, file, builtin, keyword;
+    : date: 2019-08-29;
+    printf "%s\t%s\n" $(type -t $1) $1
+}
+fun_callgraf () 
+{ 
+    : writes callgraph of function arguments;
+    : date: 2018-11-05;
+    function app_funcall () 
+    { 
+        : e.g. foreach app_funcall $* PIPE callgraph;
+        : produces pair, calling function called function, from caller.;
+        : consolidate function around FUN_USES.;
+        : date: 2017-08-16;
+        : comment $(myname 3) $(myname 2) "$(myname)( $* )";
+        app_funuses $1 | awk "
+            \$1 ~ /^$1$/ { next }; 
+	    	         { print \"$1\", \$1 }
+        "
+    };
+    report_notargcount 1 $# && return 1;
+    rm -f .funuses.out;
+    app_trace foreach app_funcall $*;
+    foreach app_funcall $* | tee $(home)/lib/$1.gin | callgraph
+}
+fun_deparenify () 
+{ 
+    : separate all "( ... )" sub-expressions;
+    : compare and contrast with _subexpr;
+    : date 2019-10-10;
+    sed 's/[(]/& /g; s/[)]/ &/g' $*;
+    unset fun_olddeparenify
+}
+fun_olddeparenify () 
+{ 
+    : compare and contrast with _subexpr;
+    : date: 2019-09-20;
+    sed 's/[(]\([^)]*\)[)]/( \1 )/g' $*
+}
+fun_starter () 
+{ 
+    : generate STDERR-directed function calls to any_INIT functions;
+    : date: 2018-02-16;
+    : date: 2020-03-23 use the INIT functions on all but FUNCIONLIB;
+    : todo: MOP this up;
+    report_notfile $1 && return 1;
+    local cmmd="";
+    [[ $1 == functionlib ]] && { 
+        cmmd="echo"
+    };
+    for fun in $(functions $1 | grep _init$ | sort);
+    do
+        printf "%s %s 1>&2\n" $cmmd $fun;
+    done
+}
+fun_words () 
+{ 
+    : date: 2019-09-04;
+    : date: 2019-09-20;
+    declare -f $* | grep -v '^ *: ' | fun_deparenify | tr -s ' \t' '\n' | grep '^[a-zA-Z0-9_]' | sed 's/;$//' | sort -u
+}
+functions () 
+{ 
+    : date: 2017-05-29;
+    : date: 2017-08-10;
+    awk '
+         $2 ~ /^[(][)]$/           && \
+       ( NF == 2 || $3 ~ /^[{]$/ ) && \
+       !printed[$1]++             { print $1 }
+
+    ' ${*:--}
+}
+home () 
+{ 
+    : ~ set or fetch the name of the portable File System;
+    : intended for DROPBOX, but lets use a portable idea.;
+    case $# in 
+        0)
+            : ${ALT_HOME:-$HOME}
+        ;;
+        *)
+            [[ -d $1 ]] && ALT_HOME=$1
+        ;;
+    esac;
+    export ALT_HOME;
+    echo ${ALT_HOME:-$HOME}
+}
+indir () 
+{ 
+    : date: 2017-05-29;
+    : date: 2018-10-09;
+    : app_trace $*;
+    report_notdirectory $1 && return 1;
+    : app_trace $*;
+    pushd $1 > /dev/null;
+    : app_trace $*;
+    eval ${@:2};
+    : app_trace $*;
+    popd 1>&2 > /dev/null
+}
+lib () 
+{ 
+    : a big fuss over ALT_HOME not in the ENVIRONMENT;
+    : todo: see if we can eliminate its use in sh-bang;
+    : app_trace home: $(home);
+    : app_trace ALT_HOME: ${ALT_HOME};
+    ${*:-echo} $(home)/lib
+}
+llrt () 
+{ 
+    : list Long, Reverse Time order;
+    : date: 2019-04-21 default current directory;
+    ls -lrt ${*:-.}
+}
+max_depth () 
+{ 
+    : date: 2017-03-05;
+    awk -F/ '{ if( NF>max_depth) max_depth=NF } END { print max_depth-1 }'
+}
+mkdir () 
+{ 
+    : implements the -p flag by default;
+    : date: 2020-03-04;
+    case $1 in 
+        -p)
+            mkdir $2;
+            return
+        ;;
+        -v)
+            mkdir $2;
+            echo $2;
+            return
+        ;;
+        -m)
+            mkdir $3;
+            chmod $2 $3;
+            return
+        ;;
+    esac;
+    [[ -d $1 ]] && return;
+    : app_trace $*;
+    mkdir $(dirname $1);
+    command mkdir $1
+}
+myname () 
+{ 
+    : ~ [n];
+    : returns name of caller OR callers caller ...;
+    : date: 2018-02-16;
+    echo ${FUNCNAME[${1:-1}]}
+}
+needir () 
+{ 
+    : date: 2017-05-29;
+    : makes non-existent directory argument and returns name;
+    : date: 2018-02-16;
+    : date: 2020-03-04;
+    report_notargcount 1 $# needed_directory && return 1;
+    [[ -d $1 ]] || mkdir $1;
+    echo $1
+}
+nf () 
+{ 
+    : date: 2017-05-11;
+    : date: 2017-07-18;
+    case $1 in 
+        *awk)
+            AWK=$1;
+            shift
+        ;;
+        *)
+            AWK=$( which gawk || which nawk || which awk )
+        ;;
+    esac;
+    case $1 in 
+        lt)
+            $AWK "NF < ${2:-5}"
+        ;;
+        gt)
+            $AWK "NF > ${2:-1}"
+        ;;
+        eq)
+            $AWK "NF == ${2:-5}"
+        ;;
+        ne)
+            $AWK "NF != ${2:-5}"
+        ;;
+        help)
+            comment $0 "[lt|gt|eq|ne||* [NN]]"
+        ;;
+        "")
+            $AWK NF
+        ;;
+        *)
+            $AWK '{ print NF, $0}'
+        ;;
+    esac
+}
+onlyfiles () 
+{ 
+    : date: 2018-10-09;
+    : date: 2019-11-28;
+    : date: 2019-11-29;
+    for a in $(stdin_orargs ${*:-* .*});
+    do
+        [[ -f $a ]] && echo $a;
+    done
+}
+paths () 
+{ 
+    : ~ returns PATH components, a line at a time;
+    : date: 2017-05-29;
+    : date: 2017-07-16;
+    eval echo \$${1:-PATH} | sed 's/::/:.:/' | tr : '\012'
+}
+sfg () 
+{ 
+    : date: 2019-12-21 back to our roots, Set Functions Grep;
+    set | functions | grep "${@:-.}"
+}
+stdin_orargs () 
+{ 
+    : treat STDIN as args, OR echo any args, default to CALLER;
+    : date: 2019-03-24;
+    : date: 2019-11-29;
+    [[ -p /dev/stdin ]] && cat || echo ${*:-$(myname 2)}
+}
+timestamp () 
+{ 
+    : ~ fileA fileB;
+    : stamp B with TIME of A;
+    : date: 2016-10-02;
+    : test for file A existing;
+    : date: 2018-10-09;
+    report_notfile $1 && return 1;
+    : app_trace $*;
+    touch -t $(date -r $(epoch $1)  +%Y%m%d%H%M.%S) $2
+}
+type_word () 
+{ 
+    : date: 2019-11-16;
+    report_notfunction ${1:-/dev/null} && return 1;
+    foreach fun_alltype $(fun_words $*) | nf gt 1
+}
+ver_time () 
+{ 
+    : date: 2017-12-23;
+    set -- $(date +%Y%m_%b/%d_%a/%H%M%S);
+    : app_trace pwd: $PWD, return: $1;
+    echo $1
+}
+wpl () 
+{ 
+    report_notpipe && return 1;
+    tr -cs 'A-Za-z0-9_' '\n'
 }
