@@ -31,20 +31,14 @@ file_mode ()
 report_copyright () 
 { 
     : date: 2019-04-22;
-    comment "Copyright (C) 2015-2019, JYATL - Just Yet Another Testing Lab";
+    : date: 2019-03-31;    
+    comment "Copyright (C) 2015-2020, JYATL - Just Yet Another Testing Lab";
     email_comment
 }
 report_emptyfile () 
 { 
     [[ -s $1 ]] && return 1;
     report_usage File: $1 is empty
-}
-report_init () 
-{ 
-    : app_trace $*;
-    return;
-    fam_iam;
-    assert_init
 }
 report_isdirectory () 
 { 
@@ -603,4 +597,59 @@ shd_collect ()
         ;;
     esac
 }
-report_init  1>&2
+
+fun_allbody () 
+{ 
+    : displays functions of named libraries OR function arguments;
+    : date: 2017-02-19;
+    : date: 2017-07-18;
+    : date: 2020-03-30;
+    declare -f $( fun_allnames ${*:-fun_allbody})
+}
+fun_allnames () 
+{ 
+    : returns function names of libraries or names of list, allegedgly functions;
+    : date: 2018-09-28;
+    : date: 2020-03-30;
+    report_notargcount 1 $# library OR function ... && return 1;
+    [[ -f $1 ]] && set -- $(functions $(onlyfiles $*));
+    echo $* 2> /dev/null
+}
+_shdoc () 
+{ 
+    : date: 2018-02-16;
+    : date: 2020-03-30;
+    report_notfunction $1 && return 1;
+    echo "function ${1}_doc {";
+    declare -f $1 | shd_justcolon;
+    echo "}"
+}
+shd_listformat () 
+{ 
+    : produce SHD listformat for functions tags;
+    : date: 2020-03-29;
+    : date: 2020-03-30;
+    runfrom $(lib) ${*:-$(myname)} || return
+    app_trace $*
+    foreach shd_taglist $* | tee $(myname).txt | awk -f $(awk_file)
+    : todo clean up extra blank records in shdoc
+    ls -lt *.txt | sed 3q
+}
+shd_taglist ()
+{ 
+    : write the tagged fields in list format;
+    : todo separatate date, fix into table;
+    : date: 2020-03-01;
+    : date: 2020-03-29;
+    : date: 2020-03-30;
+    printf "\nname\t%s\n" $1
+    declare -f $1 | shd_justcolon | sed '
+
+        # clean the text upto the tag or shdoc comment
+        s/^ *: *//
+
+        # remove the trailing semi-colons from the declare -f; 
+	s/;$//
+
+    ' | awk -f $(awk_file)
+}

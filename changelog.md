@@ -57,12 +57,25 @@ Here is a perfectly good [example][]  of a changelog.
  [shdoc]:      https://github.com/applemcg/shelf/blob/master/shdoc.org "Shell Doc-string"
  [Typora]:     https://typora.io/  "A truly minimal Markdown editor"
  [example]:    https://github.com/ranger/ranger/blob/master/CHANGELOG.md "ranger - Vim inspired file manager"
- 
- 
-
-
+ [RDB]:        https://www.amazon.com/Relational-Database-Management-Prentice-Hall-Software/dp/013938622X  "Unix /RDB"
+ [TagManual]:  http://mcgowans.org/pubs/marty3/commonplace/software/tagManual.html "Function Tag Usage"
+ [shdoc]:      http://mcgowans.org/pubs/marty3/commonplace/                        "commonplce book"
 
 # HISTORY
+
+## [0.3.1] - 2020-03-31 tag collection, distribution
+
+The output format is suitable for direct conversion to [RDB][] tables.   A [TagManual][] is in preparation.
+Functions may have 
+
+### ADDED
+
++ `shd_listformat` -- produces table of functions and TAGS, functions and SHDOC 
+
+### CHANGED
+
++ `stdlib` inherits SHD_ functions
+
 
 ## [0.3.0] - 2020-03-26 graf, backup APPS
 

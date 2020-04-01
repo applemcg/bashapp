@@ -103,13 +103,13 @@ runfrom ()
     : app_trace ENTERING: $PWD, $*;
     [[ $PWD = $(indir $1 pwd) ]] && return;
     : app_trace HUNTING: $PWD, DIR: $1.;
-    pushd $1 1>&2;
+    ignore pushd $1 
     shift;
     local cmd=$(myname 2);
     : app_trace RUNNING: $PWD, cmd: $cmd, $#: $@;
     $cmd $@;
     : app_trace HAVE RUN: $PWD, $#: $@;
-    popd 1>&2;
+    ignore popd
     : app_trace POPPED: $PWD, $#: $@;
     cdx 1>&2;
     : dapp_trace CLEARED: $PWD, $#: $@;
@@ -406,14 +406,15 @@ mkdir ()
 { 
     : implements the -p flag by default;
     : date: 2020-03-04;
+    function _mkdir () { for f in $*; do mkdir $f; done; }
     case $1 in 
         -p)
-            mkdir $2;
+            _mkdir ${*:2};
             return
         ;;
         -v)
-            mkdir $2;
-            echo $2;
+            _mkdir ${*:2};
+            echo ${*:2};
             return
         ;;
         -m)
@@ -426,6 +427,7 @@ mkdir ()
     : app_trace $*;
     mkdir $(dirname $1);
     command mkdir $1
+    unset _mkdir
 }
 myname () 
 { 

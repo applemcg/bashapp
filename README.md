@@ -36,10 +36,8 @@
 
 ## History
 
-This REPO started as a bash function library maintenance practice.
-The founding idea is sooner or later in shell programming, a function
-is used in a sufficient number of diverse applications.  The objective
-here is to build individual apps into a single function library, with
+The objective of these funciton libraries
+is to build individual apps into a single function library, with
 all function calls resolved within the library.  Such a library is
 sourced by its executable shell script.
 
@@ -53,7 +51,7 @@ The practice of [Semantic Versioning][Versioning] focuses the
 developer's attention on a precise specification of a library designed
 to solve a specific problem.
 
-Two features, assertion checking and stanardized function comments,
+Two features, assertion checking and standardized function comments,
 which are function families, **report** and **shdoc** respectively are
 documented in this [SHELF][] -- Shell Libraries and Functions draft
 standard
@@ -72,9 +70,12 @@ practice:
 + [utillib](./doc/utillib.md) 
 + [stdlib](./doc/stdlib.md) 
 + [graflib](./doc/graf.md) -- the discovery functions: app_...
++ [backuplib](./doc/backup.md) -- the only backup you'll ever need
 
 The version will remain: v < 1.0.0 until the requirements and user
 documentation are incomplete.
+
+### backup lib 
 
 ### graflib
 
