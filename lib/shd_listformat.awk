@@ -17,11 +17,11 @@
 # multi-line per function.  The Function Name is saved from the input,
 # and is re-used for new records with SEQN number and the respective
 # SHDOC text
-# 
+#
                         # using PRINT guarantees the NEWLINE
 
-        function funs( line) {  print line | "uniq > shd_functions.txt"; }
-        function shdc( line) {  print line | "uniq > shd_doc.txt"; }	
+        function funs( line) {  print line | "uniq > ./" file "_funs.txt"; }
+        function shdc( line) {  print line | "uniq > ./" file "_docs.txt"; }	
 
         NF < 1        { funs( $0); shdc( $0); seqn =  0; next }
 	$1 ~ /name/   {                       name = $0; next }

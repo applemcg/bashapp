@@ -88,18 +88,24 @@ graf_tidy ()
 graf_tapp () 
 { 
     : write the APP from its APPlib;
-    : allows execepting functionlib, these: STD, UTIL,and the APP lib;
+    : allows STD, UTIL,and the APP lib;
     : uses: graf_copy;
     : date: 2020-01-27;
-    app_trace ENTRY $*;
+    : app_trace ENTRY $*;
     report_notargcount 1 $# APP or applib && return 1;
     : apps libraries usually come from a LIB;
     local app=${1%lib};
+    local apl=${app}lib
+    local entry=${app}_entry;    
+    local whr=$(whf $entry)
+    app_trace A APP: $app, APL: $apl, WHR: $whr
+    report_notfile ${whr:-/dev/null} && return 1
+    : the source applib is now available in this APPs shell
+    source $whr
     local entry=${app}_entry;
     report_notfunction $entry && return 1;
     : -------------------------------------- Copy libraries to SRC tree --;
-    graf_copy ${app}lib || return 2;
-    graf_copy functionlib || return 5;
+    graf_copy ${apl} || return 2;
     graf_copy stdlib || return 3;
     graf_copy utillib || return 4;
     : ---------------------------------- APP_ISA is the MAIN in any APP --;
@@ -151,7 +157,7 @@ graf_entry ()
 }
 graf_version () 
 { 
-    echo graf_version 0.3.1 2020-03-31
+    echo graf_version 0.3.3 2020-04-05
 }
 graf_init () 
 { 

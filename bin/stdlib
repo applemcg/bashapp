@@ -4,6 +4,31 @@ comment ()
     : date: 2018-02-16;
     echo $* 1>&2
 }
+file_mode () 
+{ 
+    : return FILEs octal permission;
+    : date: 2020-03-22;
+    report_notfile ${1:-/dev/null} && return 1;
+    set -- $(stat -r $1);
+    echo $3
+}
+fun_allbody () 
+{ 
+    : displays functions of named libraries OR function arguments;
+    : date: 2017-02-19;
+    : date: 2017-07-18;
+    : date: 2020-03-30;
+    declare -f $( fun_allnames ${*:-fun_allbody})
+}
+fun_allnames () 
+{ 
+    : returns function names of libraries or names of list, allegedgly functions;
+    : date: 2018-09-28;
+    : date: 2020-03-30;
+    report_notargcount 1 $# library OR function ... && return 1;
+    [[ -f $1 ]] && set -- $(functions $(onlyfiles $*));
+    echo $* 2> /dev/null
+}
 ignore () 
 { 
     : ~ cmmd args ...;
@@ -13,6 +38,12 @@ ignore ()
     : date: 2019-11-23;
     $@ > /dev/null
 }
+isfunction () 
+{ 
+    : ~ function;
+    : returns TRUTH of argument as FUNCTION;
+    declare -f ${1:-/dev/null} > /dev/null
+}
 quietly () 
 { 
     : ~ cmmd args ...;
@@ -21,17 +52,10 @@ quietly ()
     : date: 2018-10-09;
     $@ 2> /dev/null
 }
-file_mode () 
-{ 
-    : return FILEs octal permission;
-    report_notfile ${1:-/dev/null} && return 1;
-    set -- $(stat -r $1);
-    echo $3
-}
 report_copyright () 
 { 
     : date: 2019-04-22;
-    : date: 2019-03-31;    
+    : date: 2019-03-31;
     comment "Copyright (C) 2015-2020, JYATL - Just Yet Another Testing Lab";
     email_comment
 }
@@ -267,389 +291,9 @@ report_notzerolengthstring ()
     [[ -z "$1" ]] && return 1;
     report_usage $1 "ISN'T" a zerolengthstring
 }
-report_source () 
-{ 
-    : mfg: report_locality;
-    : date: 2018-03-12;
-    ${@:-echo} /Users/martymcgowan/git/bash/shelf
-}
 report_usage () 
 { 
     : writes: usage message of report_... caller FAILURE to STDERR;
     : date: 2018-03-30;
     echo USAGE $(myname 3): $* 1>&2
-}
-shd_all () 
-{ 
-    : date: 2018-11-05;
-    report_notfile "${1:-Missing Function Libary}" && return 1;
-    foreach shd_one $(functions $*)
-}
-shd_clean () 
-{ 
-    : removes empty doc strings from stdin;
-    : 2019-01-28 using canonical { declare -f } format for doc;
-    report_notpipe && return 1;
-    awk '
-        !NF         { next }
-        #
-        NF == 2 && $2 ~ /[(][)]/ { lcount = 0 }
-        #                         
-                    { line[lcount++] = $0; }
-
-        #  template:
-        #  0: name ()
-        #  1: {
-        #  i: ...
-        #  N: }   
-        lcount < 3  { next; }
-
-        lcount == 3 { if( $1 ~ /^}$/ ) { lcount = 0; next; }
-                      else             { print line[0]; print line[1]; }
-                    }
-                    # printf "DEBUG: lc(%d): %s\n", lcount, $0 > "/dev/stdout"; }
-                    { print line[lcount-1] }
-      '
-}
-shd_copyright () 
-{ 
-    : date: 2019-04-22;
-    comment "Copyright (C) 2016-2019, JYATL - Just Yet Another Testing Lab";
-    email_comment
-}
-shd_demo () 
-{ 
-    shdoc $(sfg shd_)
-}
-shd_entry () 
-{ 
-    : date: 2020-01-23;
-    ${*:-echo} shd_entry shdoc shd_oc shd_abstract shd_all shd_copyright shd_demo shd_history shd_latest shd_mydoc_case shd_mydoc_notfunction shd_setdate shd_tagnames shd_summary shd_test
-}
-shd_getdate () 
-{ 
-    : date: 2016-10-01;
-    : test for file arguments;
-    : collect date-stamps from functions, by args;
-    : 0 -- all functions;
-    : N -- library ... function ...;
-    : date: 2017-03-11;
-    : add RE to allow date: field;
-    : date: 2018-01-17;
-    : date: 2018-02-16;
-    : app_trace $*;
-    : date: 2019-05-30;
-    { 
-        case $# in 
-            0)
-                set
-            ;;
-            *)
-                fun_allbody ${*:--}
-            ;;
-        esac
-    } | awk ' 	    
-        $2 ~ /^\(\)$/     { fun = $1 } 
-
-        $1 ~ /^:$/ && $2 ~ /^date:*$/ {
-
-                             printf "%s\t%s\n", fun, $0
-			  }
-    '
-}
-shd_history () 
-{ 
-    : list LAST_CHANGEDATE FUNCTION for each function in Environment;
-    : date: 2019-03-24;
-    set | shd_getdate | awk ' { sub(/;/, "", $4); printf "%s\t%s\n", $4, $1 }' | sort -r | awk '!p[$2]++ { print }'
-}
-shd_justcolon () 
-{ 
-    : returns leading colon-comments from a SINGLE function;
-    report_notpipe && return 1;
-    awk '
-    NR > 2 {
-             if ( $1 !~ /^:/ ) exit
-             else              print
-           }
-    '
-}
-shd_latest () 
-{ 
-    : date: 2016-10-16;
-    : uses: shd_getdate awk;
-    : date: 2018-01-17;
-    : date: 2018-02-16;
-    shd_getdate $* | awk '
-
-        { sub(/;/,"", $4); date[$1] = $4 };
-    END { for (d in date) print date[d], d; }
-
-    '
-}
-shd_mydoc () 
-{ 
-    : retreive the comment header of the Calling Function;
-    : .. myname 2.., most likely due to a detected error;
-    : date: 2019-11-23;
-    set -- $(myname 2);
-    report_notfunction $1 && return 1;
-    { 
-        printf "\nFUNCTION\t$1\n";
-        declare -f $1 | shd_justcolon
-    } 1>&2
-}
-shd_mydoc_case () 
-{ 
-    : this is a test of shd_mydoc. One Argument is required;
-    : the calling functions comment header is returned;
-    : date: 2019-11-23;
-    report_notfunction ${1:-/dev/null} && { 
-        shd_mydoc;
-        return 1
-    };
-    printf "=====\n%s\n" "this argument: $1 IS a Function"
-}
-shd_mydoc_notfunction () 
-{ 
-    : testcase for shd_mydoc not function;
-    : this function requires a FUNCTION for its first Argument;
-    report_notfunction $1 && { 
-        shd_mydoc;
-        return 1
-    };
-    printf "\nthis function $(myname) received a FUNCTION Arugment: $1\n" 1>&2
-}
-shd_oc () 
-{ 
-    : makes conventional name for shdoc in SHD family;
-    shdoc ${*:-$(myname) shdoc}
-}
-shd_one () 
-{ 
-    : date 2017-02-09;
-    : this is a shell doclib "shdoc" comment;
-    : --------------------------------------;
-    : an shdoc comment is the first ":"-origin lines;
-    : in the shell function, the rest being the executable.;
-    : writes a function {name}_doc for function "name";
-    : note: "function NAME_doc () {" is a sticky format.;
-    : uses: shd_trim;
-    : date: 2018-02-16;
-    report_notfunction $1 && return 1;
-    printf "function %s_doc () {\n" $1;
-    shd_trim $1;
-    echo "}"
-}
-shd_setdate () 
-{ 
-    : appends date tag to function, avoiding redundancy;
-    : as last line among leading shdoc comments;
-    : -----;
-    : this uses the local function trick. trailing UNSET;
-    : date: 2016-09-30;
-    : update: change date from comment to shd_ tag;
-    : uses: awk declare foreach fun_allnames uniq;
-    : args: .. function .. library ..;
-    : stdout: function_body ...;
-    : date: 2018-01-17;
-    : date: 2018-02-16;
-    function _dffx () 
-    { 
-        declare -f $1 | awk -v date=$(date +%F) '
-
-        BEGIN       { code = 0 }
-
-        NR < 3 || ( \
-        NR > 2 && !code && $1 ~ /^:$/ \
-	          ) {
-	              print; next
-		    }
-        !code       {
-	              printf "    : date: %s;\n", date
-		      code = 1
-		    }
-		    { print }
-
-     ' | uniq | tee .$(myname).out
-    };
-    : app_trace $*;
-    foreach _dffx $(fun_allnames ${*:-shd_setdate});
-    unset _dffx
-}
-shd_summary () 
-{ 
-    for fun in $*;
-    do
-        isfunction $fun || continue;
-        printf "\n----\t$fun\n";
-        declare -f $fun | sh_lcolon | grep -v ": date: ....-..-..;$";
-    done
-}
-shd_tagnames () 
-{ 
-    : date: 2017-04-19;
-    report_notfunction $1 && return 1;
-    shd_tags $* 2> /dev/null | field 2 | sort -u
-}
-shd_tags () 
-{ 
-    : args: function ...;
-    : format: function tag-line;
-    : uses: shd_oc awk;
-    shd_oc ${*:-$(myname)} | awk '
-
-        $1 ~ /^function$/ { name = $2; sub(/_doc$/,"",name); }
-	$2 ~ /:$/         {
-           tag = $0
-	   sub(/: /,"",tag)
-   	   sub(/: /,"\t",tag)
-      	   sub(/;$/,"",tag)
-	   printf "%-9s\t%s\n", name, tag
-        }
-	'
-}
-shd_test () 
-{ 
-    : 1. test default, NO arguments, then;
-    : 2. stub out test all functions in the library;
-    : 3. demonstrate ignore subsequent comments;
-    : 4. test shd_clean;
-    rm -f .shd*;
-    set .shd{oc,clean};
-    shdoc;
-    :;
-    shdoc $(sfg shd_) | tee $1 | shd_clean | tee $2;
-    declare -f shd_test | grep -v '^ *:' 1>&2;
-    wc $*;
-    comm -23 <(functions $1|sort) <(functions $2|sort)
-}
-shd_trim () 
-{ 
-    : ~ function;
-    : user function to trim candidate comments;
-    set ${*:-$(myname)};
-    report_notfunction $1 && return 1;
-    declare -f $* | awk ' $1 !~ /^:[;]*$/'
-}
-shdoc () 
-{ 
-    : this is a shell doclib "shdoc" comment;
-    : an shdoc comment is the first ":"-origin lines;
-    : in the shell function, the rest being the executable.;
-    : date: 2019-01-28 use local _shdoc and produce declare -f format;
-    function _shdoc () 
-    { 
-        : date: 2018-02-16;
-        report_notfunction $1 && return 1;
-        echo "function ${1}_doc {";
-        declare -f $1 | shd_justcolon;
-        echo "}"
-    };
-    foreach _shdoc ${*:-$(myname)}
-}
-isfunction () 
-{ 
-    : ~ function;
-    : returns TRUTH of argument as FUNCTION;
-    declare -f ${1:-/dev/null} > /dev/null
-}
-shd_getlibr () 
-{ 
-    : collect date-stamps from functions, by args;
-    : date: 2016-10-01;
-    : test for file arguments;
-    : libr: stdlib;
-    : 0 -- all funtions;
-    : N -- library ... function ...;
-    : date: 2017-03-11;
-    : add RE to allow date: field;
-    : date: 2018-01-17;
-    : date: 2018-02-16;
-    : app_trace $*;
-    : date: 2019-05-30;
-    : date: 2020-02-19;
-    : date: 2020-02-20;
-    shd_collect $* | awk '
-                          # { print $0 > "/dev/stderr"; }
-        $2 ~ /^\(\)$/     { fun = $1 } 
-
-        $1 ~ /^:$/ && $2 ~ /^libr:*$/ {
-                             sub(": libr: ","")
-                             sub(";","")
-			  #  print $0 > "/dev/stderr";
-                             printf "%s\t%s\n", fun, $0
-			  }
-    '
-}
-shd_collect () 
-{ 
-    : collect functions, defaulting to SET;
-    : uses: fun_allbody;
-    : libr: stdlib;
-    : date: 2020-02-20;
-    case $# in 
-        0)
-            set
-        ;;
-        *)
-            fun_allbody ${*:--}
-        ;;
-    esac
-}
-
-fun_allbody () 
-{ 
-    : displays functions of named libraries OR function arguments;
-    : date: 2017-02-19;
-    : date: 2017-07-18;
-    : date: 2020-03-30;
-    declare -f $( fun_allnames ${*:-fun_allbody})
-}
-fun_allnames () 
-{ 
-    : returns function names of libraries or names of list, allegedgly functions;
-    : date: 2018-09-28;
-    : date: 2020-03-30;
-    report_notargcount 1 $# library OR function ... && return 1;
-    [[ -f $1 ]] && set -- $(functions $(onlyfiles $*));
-    echo $* 2> /dev/null
-}
-_shdoc () 
-{ 
-    : date: 2018-02-16;
-    : date: 2020-03-30;
-    report_notfunction $1 && return 1;
-    echo "function ${1}_doc {";
-    declare -f $1 | shd_justcolon;
-    echo "}"
-}
-shd_listformat () 
-{ 
-    : produce SHD listformat for functions tags;
-    : date: 2020-03-29;
-    : date: 2020-03-30;
-    runfrom $(lib) ${*:-$(myname)} || return
-    app_trace $*
-    foreach shd_taglist $* | tee $(myname).txt | awk -f $(awk_file)
-    : todo clean up extra blank records in shdoc
-    ls -lt *.txt | sed 3q
-}
-shd_taglist ()
-{ 
-    : write the tagged fields in list format;
-    : todo separatate date, fix into table;
-    : date: 2020-03-01;
-    : date: 2020-03-29;
-    : date: 2020-03-30;
-    printf "\nname\t%s\n" $1
-    declare -f $1 | shd_justcolon | sed '
-
-        # clean the text upto the tag or shdoc comment
-        s/^ *: *//
-
-        # remove the trailing semi-colons from the declare -f; 
-	s/;$//
-
-    ' | awk -f $(awk_file)
 }

@@ -23,13 +23,6 @@ having made this statement imply future intent.
 
 # HISTORY
 
-## [[ANTICPATED]]
-
-+ `backup_directory` -- needs hook in the APP for user customizations 
-
-     + USER_BACKUP_AREA is available, likely APP_ISA customization
-	 + ALTERNAT_BACKUP_DIRS, ditto 
-
 ## [0.3.3] - 2020-04-05 shdlib, tags
 
 ### ADDED
