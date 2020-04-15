@@ -20,10 +20,10 @@ backup_allfiles ()
         : date: 2019-09-28;
         cmp -s $1 .bak/$1 || echo $1
     };
-    app_trace ENTRY $*;
+    : app_trace ENTRY $*;
     backup_sync;
     local files=$(onlyfiles);
-    app_trace A files;
+    : app_trace A files;
     $files;
     backup_main $(foreach backup_needed $files);
     unset backup_needed
@@ -114,7 +114,7 @@ backup_main ()
                 cp $2/$1 $1;
                 timestamp $2/$1 $1;
                 chmod $mode $1;
-                app_trace PERMISSIONS: $(ls -l $1);
+                : app_trace PERMISSIONS: $(ls -l $1);
                 return
             };
             cd ..;
@@ -207,7 +207,7 @@ backup_ver ()
 }
 backup_init () 
 { 
-    app_trace $* backup_{obsolete,outdated}_lib;
+    : app_trace $* backup_{obsolete,outdated}_lib;
     unset backup_{obsolete,outdated}_lib
 }
 backup_init  1>&2

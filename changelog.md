@@ -30,6 +30,15 @@ having made this statement imply future intent.
      + USER_BACKUP_AREA is available, likely APP_ISA customization
 	 + ALTERNAT_BACKUP_DIRS, ditto 
 
+## [0.3.4] - 2020-04-14 quiet tracing, shd
+
+### ADDED
+
+functions:
+
++ `shd_{distribute,allftags,tagdata,help}`
++ `trace_{call,stderr}`
+
 ## [0.3.3] - 2020-04-05 shdlib, tags
 
 ### ADDED

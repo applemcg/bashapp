@@ -257,14 +257,14 @@ for_nomar ()
     : date: 2019-08-29;
     local cmmd=$1;
     shift;
-    app_trace CMMD: $cmmd, ARGS: $*;
+    : app_trace CMMD: $cmmd, ARGS: $*;
     while true; do
         local num=$#;
         set $(args_uniq $* $($cmmd $*));
         app_trace AFTER $CMMD "num: $num, $#";
         [[ $num -eq $# ]] && break;
     done;
-    app_trace RETURN $*;
+    : app_trace RETURN $*;
     echo $*
 }
 foreach () 
@@ -305,7 +305,7 @@ fun_callgraf ()
     };
     report_notargcount 1 $# && return 1;
     rm -f .funuses.out;
-    app_trace foreach app_funcall $*;
+    : app_trace foreach app_funcall $*;
     foreach app_funcall $* | tee $(home)/lib/$1.gin | callgraph
 }
 fun_deparenify () 
@@ -546,4 +546,18 @@ wpl ()
 { 
     report_notpipe && return 1;
     tr -cs 'A-Za-z0-9_' '\n'
+}
+trace_call () 
+{ 
+    : obsolescent, retiring in behalf of app_trace;
+    : date: 2017-07-18;
+    : date: 2018-02-16;
+    trace_stderr "$@"
+}
+trace_stderr () 
+{ 
+    : date: 2018-02-16;
+    pa=${FUNCNAME[2]:-COMMANDLINE};
+    gr=${FUNCNAME[3]:-COMMANDLINE};
+    printf "TRACE %s\t@ %s\t%d  ( %s )\n" "$gr" "$pa" $# "$*" 1>&2
 }

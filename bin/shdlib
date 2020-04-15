@@ -430,3 +430,81 @@ shdoc ()
     unset _shdoc
 }
 
+shd_allftags () 
+{ 
+    : for all functions. collect and distribute the tags;
+    : date: 2020-03-29;
+    : date: 2020-04-12;
+    foreach shd_taglist ${*:-$(myname))} | tee allftags.txt | shd_distribute
+}
+shd_distribute () 
+{ 
+    : distribute the fields to their tables;
+    : date: 2020-03-29;
+    : date: 2020-04-12;
+    report_notpipe && return 1;
+    awk '
+        function funs( line) {  print line > "functions.txt"; }
+        function shdc( line) {  print line > "shdoc.txt"; }	
+
+        NF < 1        { funs( $0); shdc( $0); next }
+	$1 ~ /name/   { name = $2; funs( $0); next }
+        $1 ~ /abstrt/ { funs( $0);            next }
+
+                        # separate record for each seqn, shdoc
+        $1 ~ /seqn/   { shdc( sprintf("name\t%s\n%s", name, $0)); next }
+        $1 ~ /shdoc/  { shdc( $0 "\n");       next }
+
+                      { funs( $0) }
+    '
+}
+shd_help () 
+{ 
+    : date: 2020-04-12;
+    qf test_sequence
+}
+shd_tagdata () 
+{ 
+    : write the tagged fields in list format;
+    : todo separatate date, fix into table;
+    : date: 2020-03-01;
+    : date: 2020-03-29;
+    : date: 2020-04-12;
+    report_notpipe && return 1;
+    awk '
+        NR == 1 && $1 !~ /.*:$/  {
+
+	   printf "abstr\t%s\n", $0
+	   abstr = $0
+	   next
+	}
+        $1 ~ /.*:$/  {
+
+	   field = $1; record = $0
+	   sub(/:/,"",field)
+	   sub(/.*: */,"",record)
+	   if (field ~ /date/) {
+	       latest =  $2
+	       first  = (first? first: $2)
+	       next
+	   }
+	   	   printf "%s\t%s\n", field, record
+	   next
+       }   
+       {
+           if(seqn < 1)  {
+	        # abstract is SEQN = 0 
+                printf "seqn\t%d\n", seqn++
+		printf "shdoc\t%s\n", abstr
+	   }   
+	   printf "seqn\t%d\n", seqn++
+	   printf "shdoc\t%s\n", $0
+       }
+       END { if (first) {
+
+           printf "%s\t%s\n", "first", first
+	   printf "%s\t%s\n", "latest", latest
+	   }
+       }
+       '
+}

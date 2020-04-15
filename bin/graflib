@@ -7,7 +7,7 @@ graf_copy ()
     { 
         : it was easier to make this a sub-function called by INDIR,;
         : rather than use RUNFROM;
-        app_trace ENTRY $*;
+        : app_trace ENTRY $*;
         graf_prep $1 > ~/tmp/dir.$$ || { 
             app_trace graf_prep FAILED;
             cat ~/tmp/dir.$$ 1>&2;
@@ -26,13 +26,11 @@ graf_copy ()
             unset $(myname);
             return 3
         };
-        ls -lisart $libr/.bak 1>&2;
-        app_trace SAW $libr/.bak;
+        _lib_ls $libr/.bak;
         chmod -w $libr/.bak/*;
         : --------------------------------------- LINK the .BAK to the API SRC --;
-        ln -f $libr/.bak/* $(graf_lib)/src;
-        ls -lisart $(graf_lib)/src | tail -24 1>&2;
-        app_trace SAW $(graf_lib)/src;
+        ln -f $libr/.bak/*;
+        _lib_ls $(graf_lib)/src;
         unset $(myname)
     };
     app_trace ENTRY $*;
@@ -40,6 +38,11 @@ graf_copy ()
     local libr=$( which $1 );
     indir $(dirname $libr) _do_graf_copy $(basename $libr);
     return $?
+}
+_lib_ls () 
+{ 
+    ls -lisart $1 | tail -24 1>&2;
+    app_trace SAW $1
 }
 graf_prep () 
 { 
@@ -83,7 +86,7 @@ graf_tidy ()
     } > .l;
     mv .l $1;
     chmod +x $1;
-    app_trace $(ls -l $1)
+    _lib_ls $1
 }
 graf_tapp () 
 { 
@@ -95,13 +98,13 @@ graf_tapp ()
     report_notargcount 1 $# APP or applib && return 1;
     : apps libraries usually come from a LIB;
     local app=${1%lib};
-    local apl=${app}lib
-    local entry=${app}_entry;    
-    local whr=$(whf $entry)
-    app_trace A APP: $app, APL: $apl, WHR: $whr
-    report_notfile ${whr:-/dev/null} && return 1
-    : the source applib is now available in this APPs shell
-    source $whr
+    local apl=${app}lib;
+    local entry=${app}_entry;
+    local whr=$(whf $entry);
+    app_trace A APP: $app, APL: $apl, WHR: $whr;
+    report_notfile ${whr:-/dev/null} && return 1;
+    : the source applib is now available in this APPs shell;
+    source $whr;
     local entry=${app}_entry;
     report_notfunction $entry && return 1;
     : -------------------------------------- Copy libraries to SRC tree --;
@@ -221,7 +224,7 @@ graf_scenario ()
     : where an APP is also a function library, but entire to itself;
     : each APP should have an _INIT function, so when SOURCEd,;
     : it offers instructions on how to begin;
-    cat <<'EOF'
+    cat  <<'EOF'
 
     $ graf copy libA
     $ graf copy libB
