@@ -18,7 +18,7 @@ proc_parent_test ()
 app_isa () 
 { 
     : encourage FUNCTIONS to Become an APP;
-    : usage: "app_isaa arg ... || return";
+    : usage: "app_isa arg ... || return";
     : caller may have an _INIT function, if so, call it;
     : also, if CALLER_$1 is a function, call it with args, and return;
     : and, if the first argument is NOT a function and;
@@ -28,29 +28,42 @@ app_isa ()
     : date: 2020-01-27;
     : date: 2020-02-02 add default _MAIN function;
     local parent=$(proc_parent $(myname 2));
+    app_trace PARENT: $parent;
+    :;
+    : ------------------------------------------------------ any initialization --;
     local init=${parent}_init;
-    local func=${parent}_$1;
-    local main=${parent}_main;
-    : -- any initialization;
     isfunction $init && $init 2> /dev/null;
-    : app_trace parent: $parent, init: $init, func: $func, main: $main;
-    : -- a PARENT_function;
+    :;
+    : -------------------------------------------------- any user customization --;
+    : --------- has to be an executable, not a function --;
+    :;
+    local user=$(which ${parent}_user);
+    app_trace USER: $user;
+    [[ -f "$user" ]] && $user;
+    :;
+    : ------------------------------------------------------- a PARENT_function --;
+    : -------------------- is the first arg: PARENT arg --;
+    local func=${parent}_$1;
     isfunction $func && { 
         shift;
         : app_trace IS FUNCTION: $func, $*;
         $func $*;
         return 1
     };
-    : implicit functions;
+    : ------------------------------------------------------ implicit functions --;
     : app_trace $#, $*;
     case $1 in 
         help)
-            : this is the default help function.;
+            : ----------------------- this is the default help function --;
+            :;
             : a user-defined parent_help overrides by calling "parent help";
             sfg ${parent}_ | pr -t4 1>&2;
             return 1
         ;;
         *)
+            : ------------------- main is surrogate for no sub-function --;
+            :;
+            local main=${parent}_main;
             isfunction $main && { 
                 : app_trace IS FUNCTION: $main, $*;
                 $main "$@";
@@ -560,4 +573,86 @@ trace_stderr ()
     pa=${FUNCNAME[2]:-COMMANDLINE};
     gr=${FUNCNAME[3]:-COMMANDLINE};
     printf "TRACE %s\t@ %s\t%d  ( %s )\n" "$gr" "$pa" $# "$*" 1>&2
+}
+app_trace () 
+{ 
+    : report the CALLER name 0, its args, their caller 1, and the callers caller 2.;
+    : date: 2019-05-04;
+    : date: 2020-04-23;
+    local call_0="";
+    local call_1="";
+    local call_2="";
+    local cdepth=${#FUNCNAME[@]};
+    [[ $cdepth -gt 1 ]] && call_0=${FUNCNAME[1]};
+    [[ $cdepth -gt 2 ]] && call_1=${FUNCNAME[2]};
+    [[ $cdepth -gt 3 ]] && call_2=${FUNCNAME[3]};
+    app_pause "CLEAN ME UP $call_0( $* ) $call_1 $call_2"
+}
+app_pause () 
+{ 
+    : date: 2019-07-13;
+    : pause execution, displaying the arguments;
+    : date: 2020-04-23;
+    read -p "$@. RETURN?\n" < /dev/tty > /dev/tty
+}
+pause_on () 
+{ 
+    : set APP_PAUSE to read with Pause;
+    : date: 2019-09-15;
+    : date: 2020-04-23;
+    eval "app_pause () { : pause execution, displaying the arguments; read -p \"\$@ RETURN?        :\" < /dev/tty >/dev/tty; }"
+}
+pause_off () 
+{ 
+    : set APP_PAUSE to STDERR;
+    : date: 2019-09-15;
+    : date: 2020-04-23;
+    eval "app_pause () { trace_sub \$@; }"
+}
+pause_test () 
+{ 
+    : date: 2020-04-23;
+    function pause_deptha () 
+    { 
+        pause_on;
+        app_trace ON? $1;
+        shift;
+        pause_off;
+        app_trace OFF? $*
+    };
+    set -- One Two Three Four 5 6;
+    pause_on;
+    app_trace ON? $1;
+    shift;
+    pause_off;
+    app_trace OFF? $*;
+    pause_deptha ${*:3};
+    declare -f app_pause pause_{on,off}
+}
+trace_stderr () 
+{ 
+    : date: 2018-02-16;
+    : date: 2020-04-23;
+    pa=${FUNCNAME[2]:-COMMANDLINE};
+    gr=${FUNCNAME[3]:-COMMANDLINE};
+    printf "TRACE %s\t@ %s\t%d  ( %s )\n" "$gr" "$pa" $# "$*" 1>&2
+}
+trace_sub () 
+{ 
+    : cloned from TRACE_STDERR, to accomodate pause_on, off;
+    : also note, stack is one deeper than _STDERR;
+    : todo: finds a way to unite these two off-by-one instances.;
+    : date: 2018-02-16;
+    : date: 2020-04-23;
+    pa=${FUNCNAME[3]:-COMMANDLINE};
+    gr=${FUNCNAME[4]:-COMMANDLINE};
+    printf "%s\n" "$*" 1>&2
+}
+trace_call () 
+{ 
+    : obsolescent, retiring in behalf of app_trace;
+    : date: 2017-07-18;
+    : date: 2018-02-16;
+    : date: 2020-04-23;
+    trace_stderr "$@"
 }

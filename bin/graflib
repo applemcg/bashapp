@@ -29,13 +29,22 @@ graf_copy ()
         _lib_ls $libr/.bak;
         chmod -w $libr/.bak/*;
         : --------------------------------------- LINK the .BAK to the API SRC --;
-        ln -f $libr/.bak/*;
+        ln -f $libr/.bak/* $(graf_lib)/src;
         _lib_ls $(graf_lib)/src;
         unset $(myname)
     };
     app_trace ENTRY $*;
     report_notargcount 1 $# && return 1;
-    local libr=$( which $1 );
+    case $1 in 
+        *lib)
+            local libr=$( which $1 )
+        ;;
+        *)
+            report_usage Bad LIBRARY name: $1;
+            return 2
+        ;;
+    esac;
+    app_trace LIBR: $libr;
     indir $(dirname $libr) _do_graf_copy $(basename $libr);
     return $?
 }
@@ -58,16 +67,17 @@ graf_prep ()
     graf_tidy $1;
     : ---------------------------------------- F2FILE returns DIRectory --;
     local dir=$(f2file $1);
+    app_trace DIR $dir;
+    _lib_ls $dir;
     report_notdirectory $dir && { 
-        app_trace DIR $dir;
         return 2
     };
     : ---------------------------------------- the Individual Functions --;
     : app_trace pushd $dir;
     pushd $dir;
-    app_trace $(which backup) allfiles;
-    $(which backup) allfiles;
+    backup_allfiles;
     popd;
+    _lib_ls $dir;
     app_trace RETURN $dir;
     echo $dir
 }
@@ -78,7 +88,7 @@ graf_tidy ()
     : uses: fun_starter;
     : libr: graflib;
     : date: 2020-02-20;
-    app_trace ENTRY $*;
+    app_trace SEE SOURCE $*;
     source $1;
     { 
         declare -f $(functions $1);
@@ -224,7 +234,7 @@ graf_scenario ()
     : where an APP is also a function library, but entire to itself;
     : each APP should have an _INIT function, so when SOURCEd,;
     : it offers instructions on how to begin;
-    cat  <<'EOF'
+    cat <<'EOF'
 
     $ graf copy libA
     $ graf copy libB
@@ -433,12 +443,21 @@ app_funuses ()
         \$2 !~ /^$1$/       { print \$2 }
     "
 }
-mk_graf_version () 
-{ 
-    : hard-coded to generate graf_version from changelog;
+mk_graf_version ()
+{
+    : query the available versions OR define a function returning the value
     : libr: graflib;
-    set -- $(grep '^## \[' changelog.md | sed 1q | sed 's/.. .//; s/\] - / /');
-    eval "graf_version () { echo graf_version $1 $2; }";
-    declare -f graf_version
+    case $# in
+    0 )
+        grep '^## \[' changelog.md | sed 8q;;
+    * )     
+        eval "graf_version () { echo graf_version $1 $2; }";;
+    esac
+    declare -f graf_version    
+
+}
+graf_version () 
+{ 
+    echo graf_version 0.3.5 2020-04-23
 }
 graf_init  1>&2

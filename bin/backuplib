@@ -20,11 +20,10 @@ backup_allfiles ()
         : date: 2019-09-28;
         cmp -s $1 .bak/$1 || echo $1
     };
-    : app_trace ENTRY $*;
+    app_trace ENTRY $*;
     backup_sync;
     local files=$(onlyfiles);
-    : app_trace A files;
-    $files;
+    app_trace A files: $files;
     backup_main $(foreach backup_needed $files);
     unset backup_needed
 }

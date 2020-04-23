@@ -30,6 +30,24 @@ having made this statement imply future intent.
      + USER_BACKUP_AREA is available, likely APP_ISA customization
 	 + ALTERNAT_BACKUP_DIRS, ditto 
 
++ `app_trace` -- toggle read from tty, pausing, to deliver trace to STDERR
+
+## [0.3.5] - 2020-04-23 prep trace toggle
+
+### FIXED 
+
++ `graf_copy` -- copy locations, link to GRAF_LIB/src  -- universal OrgMode sources
+
+### CHANGED
+
++ moved `file_mode` to utillib
++ `app_isa` -- user hook is now an executable: {app}_user,
+
+### ADDED
+
++ to `utillib` -- preparing testing for the toggle read, pause feature, functions:
+  `app_{trace,pause} pause_{on,off,test} trace_{stderr,sub,call}`
+
 ## [0.3.4] - 2020-04-14 quiet tracing, shd
 
 ### ADDED

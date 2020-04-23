@@ -4,14 +4,6 @@ comment ()
     : date: 2018-02-16;
     echo $* 1>&2
 }
-file_mode () 
-{ 
-    : return FILEs octal permission;
-    : date: 2020-03-22;
-    report_notfile ${1:-/dev/null} && return 1;
-    set -- $(stat -r $1);
-    echo $3
-}
 fun_allbody () 
 { 
     : displays functions of named libraries OR function arguments;
