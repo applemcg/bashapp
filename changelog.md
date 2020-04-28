@@ -25,12 +25,32 @@ having made this statement imply future intent.
 
 ## [[ANTICPATED]]
 
++ clean up introduction of `callStack` in `report_usage`,  a special purpose
+  hook to capture a higher-up usage bug.
+  
++ complete removal of app_{trace,pause}, trace_{call,stderr}... from utillib
+
+## [0.3.6] - 2020-04-28 backup_user
+
+### ADDED 
+
 + `backup_directory` -- needs hook in the APP for user customizations 
+   the hook is now a sourceable file {family}_user, e.g. `backup_user`
+   which may set USER_BACKUP_AREA, where ALTERNATE_BACKUP_DIRS applies,
+   the latter is two sub-directory names for the backup and version 
+   respectively..
+    
+### CHANGED
 
-     + USER_BACKUP_AREA is available, likely APP_ISA customization
-	 + ALTERNAT_BACKUP_DIRS, ditto 
++ `app_trace` -- many/most removed, since preferred debugging is now
+  `debug_this` using PS4
+  
++ `graf_init` -- accepts a graf_user, as backup_user  
 
-+ `app_trace` -- toggle read from tty, pausing, to deliver trace to STDERR
+### FIXED 
+
++ removed `backup_init` -- no longer needed, untested code in `graf`
+  situations left warning messages.
 
 ## [0.3.5] - 2020-04-23 prep trace toggle
 
@@ -157,11 +177,11 @@ Some of the functions in `utillib`:
 
 ## [0.2.4] - 2020-02-08 add backuplib
 
-## ADDED 
+### ADDED 
 
 + **backuplib** -- simply add the lib, convert to an app later
 
-## CHANGED
+### CHANGED
 
 + f2file now puts function copies in $(home)/lib/{ library }.d and the
   ERRor file in ~/tmp/

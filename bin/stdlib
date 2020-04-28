@@ -287,5 +287,12 @@ report_usage ()
 { 
     : writes: usage message of report_... caller FAILURE to STDERR;
     : date: 2018-03-30;
-    echo USAGE $(myname 3): $* 1>&2
+    local caller=$(myname 3);
+    case $caller in 
+        diff_pair)
+            callStack;
+            read -p "HALT, use ctrl-C" < /dev/tty > /dev/tty
+        ;;
+    esac;
+    echo USAGE $caller: $* 1>&2
 }

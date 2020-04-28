@@ -143,14 +143,13 @@ setenv ()
 }
 app_pause () 
 { 
-    : date: 2019-07-13;
-    : pause execution, displaying the arguments;
-    read -p "$@. RETURN? " < /dev/tty
+    trace_sub $@
 }
 app_trace () 
 { 
     : report the CALLER name 0, its args, their caller 1, and the callers caller 2.;
     : date: 2019-05-04;
+    : date: 2020-04-23;
     local call_0="";
     local call_1="";
     local call_2="";
@@ -158,7 +157,7 @@ app_trace ()
     [[ $cdepth -gt 1 ]] && call_0=${FUNCNAME[1]};
     [[ $cdepth -gt 2 ]] && call_1=${FUNCNAME[2]};
     [[ $cdepth -gt 3 ]] && call_2=${FUNCNAME[3]};
-    app_pause "CLEAN ME UP: $call_0( $* ) $call_1 $call_2"
+    app_pause "CLEAN ME UP $call_0( $* ) $call_1 $call_2"
 }
 args_uniq () 
 { 
@@ -565,35 +564,16 @@ trace_call ()
     : obsolescent, retiring in behalf of app_trace;
     : date: 2017-07-18;
     : date: 2018-02-16;
+    : date: 2020-04-23;
     trace_stderr "$@"
 }
 trace_stderr () 
 { 
     : date: 2018-02-16;
+    : date: 2020-04-23;
     pa=${FUNCNAME[2]:-COMMANDLINE};
     gr=${FUNCNAME[3]:-COMMANDLINE};
     printf "TRACE %s\t@ %s\t%d  ( %s )\n" "$gr" "$pa" $# "$*" 1>&2
-}
-app_trace () 
-{ 
-    : report the CALLER name 0, its args, their caller 1, and the callers caller 2.;
-    : date: 2019-05-04;
-    : date: 2020-04-23;
-    local call_0="";
-    local call_1="";
-    local call_2="";
-    local cdepth=${#FUNCNAME[@]};
-    [[ $cdepth -gt 1 ]] && call_0=${FUNCNAME[1]};
-    [[ $cdepth -gt 2 ]] && call_1=${FUNCNAME[2]};
-    [[ $cdepth -gt 3 ]] && call_2=${FUNCNAME[3]};
-    app_pause "CLEAN ME UP $call_0( $* ) $call_1 $call_2"
-}
-app_pause () 
-{ 
-    : date: 2019-07-13;
-    : pause execution, displaying the arguments;
-    : date: 2020-04-23;
-    read -p "$@. RETURN?\n" < /dev/tty > /dev/tty
 }
 pause_on () 
 { 
@@ -629,14 +609,6 @@ pause_test ()
     pause_deptha ${*:3};
     declare -f app_pause pause_{on,off}
 }
-trace_stderr () 
-{ 
-    : date: 2018-02-16;
-    : date: 2020-04-23;
-    pa=${FUNCNAME[2]:-COMMANDLINE};
-    gr=${FUNCNAME[3]:-COMMANDLINE};
-    printf "TRACE %s\t@ %s\t%d  ( %s )\n" "$gr" "$pa" $# "$*" 1>&2
-}
 trace_sub () 
 { 
     : cloned from TRACE_STDERR, to accomodate pause_on, off;
@@ -648,11 +620,11 @@ trace_sub ()
     gr=${FUNCNAME[4]:-COMMANDLINE};
     printf "%s\n" "$*" 1>&2
 }
-trace_call () 
+trace_app () 
 { 
-    : obsolescent, retiring in behalf of app_trace;
-    : date: 2017-07-18;
-    : date: 2018-02-16;
-    : date: 2020-04-23;
-    trace_stderr "$@"
+    : tracing, debugging to make an APP;
+    : multi-arg eg -- trace_app foreach do_whf;
+    : OR trace_app declare -f;
+    : date: 2020-04-25;
+    ${*:-echo} trace_{call,stderr,sub,app} app_{trace,pause} pause_{on,off}
 }

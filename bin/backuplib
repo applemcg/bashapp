@@ -20,10 +20,8 @@ backup_allfiles ()
         : date: 2019-09-28;
         cmp -s $1 .bak/$1 || echo $1
     };
-    app_trace ENTRY $*;
     backup_sync;
     local files=$(onlyfiles);
-    app_trace A files: $files;
     backup_main $(foreach backup_needed $files);
     unset backup_needed
 }
@@ -31,7 +29,6 @@ backup_depth ()
 { 
     : return the number of the deepest backup directory;
     : date 2017-03-05;
-    : app_trace $*;
     : date: 2019-12-28;
     find $(backup_directory) | max_depth
 }
@@ -95,29 +92,23 @@ backup_main ()
         : date: 2019-12-28;
         :;
         set $1 $(backup_directory) ${2:-$PWD};
-        : app_trace ENTRY: $*;
         [[ -d $2 ]] || mkdir $2;
         [[ $3 == $PWD ]] && { 
             cmp $1 $2/$1 2> /dev/null 1>&2 && return
         };
         local mode=$(file_mode $1);
-        : app_trace file: $1, mode: $mode;
         [[ -f $2/$1 ]] && { 
             cd $2;
-            : app_trace DESCENDING: $PWD, $*;
             backup_here $1 $3
         } || { 
-            : app_trace MOVING: $PWD, $*;
             mv $1 $2/$1;
             [[ $3 == $PWD ]] && { 
                 cp $2/$1 $1;
                 timestamp $2/$1 $1;
                 chmod $mode $1;
-                : app_trace PERMISSIONS: $(ls -l $1);
                 return
             };
             cd ..;
-            : app_trace ASCENDING: $PWD, $*;
             backup_here $1 $3
         }
     };
@@ -127,12 +118,10 @@ backup_main ()
         : avoid temptation to include as opening steps in backup_here,;
         : date: 2019-12-20 -- notfile test;
         report_notfile ${1:-/dev/null} && return 1;
-        : app_trace ENTRY $*;
         pushd $(dirname $1) > /dev/null;
         backup_here $(basename $1);
         popd > /dev/null
     };
-    : app_trace $*;
     foreach backup_one $*;
     : unset backup_{here,one}
 }
@@ -144,7 +133,6 @@ backup_paper ()
 backup_sync () 
 { 
     : pushes files no-longer backed up one level down the backup tree.;
-    : app_trace $*;
     : date: 2019-12-28;
     function backup_outdated () 
     { 
@@ -188,25 +176,15 @@ backup_ver ()
     : date 2017-03-05;
     : date 2019-04-28 remove opional argument name for version;
     : date: 2019-12-28;
-    function backup_copies () 
-    { 
-        : for the backup files, the name of the top copy;
-        : date: 2019-12-28;
-        backup_files | sed "s/^/$(backup_directory)\//"
-    };
-    local ver=$(version_directory);
-    local bak=$(backup_directory);
-    report_notdirectory $bak && return 1;
+    report_notdirectory $(backup_directory) && return 1;
     :;
-    set -- $(ver_time);
-    : app_trace A: $*;
-    set -- $(needir $ver/$1);
-    : app_trace ln -f backup_copies $1;
-    ln -f $(backup_copies) $1
+    set -- $(backup_copies);
+    set -- ${*:-/dev/null};
+    ln -f $* $(needir $(version_directory)/$(ver_time))
 }
-backup_init () 
+backup_copies () 
 { 
-    : app_trace $* backup_{obsolete,outdated}_lib;
-    unset backup_{obsolete,outdated}_lib
+    : for the backup files, the name of the top copy;
+    : date: 2019-12-28;
+    backup_files | sed "s/^/$(backup_directory)\//"
 }
-backup_init  1>&2
