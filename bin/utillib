@@ -28,7 +28,6 @@ app_isa ()
     : date: 2020-01-27;
     : date: 2020-02-02 add default _MAIN function;
     local parent=$(proc_parent $(myname 2));
-    app_trace PARENT: $parent;
     :;
     : ------------------------------------------------------ any initialization --;
     local init=${parent}_init;
@@ -38,7 +37,6 @@ app_isa ()
     : --------- has to be an executable, not a function --;
     :;
     local user=$(which ${parent}_user);
-    app_trace USER: $user;
     [[ -f "$user" ]] && $user;
     :;
     : ------------------------------------------------------- a PARENT_function --;
@@ -46,12 +44,10 @@ app_isa ()
     local func=${parent}_$1;
     isfunction $func && { 
         shift;
-        : app_trace IS FUNCTION: $func, $*;
         $func $*;
         return 1
     };
     : ------------------------------------------------------ implicit functions --;
-    : app_trace $#, $*;
     case $1 in 
         help)
             : ----------------------- this is the default help function --;
@@ -65,11 +61,10 @@ app_isa ()
             :;
             local main=${parent}_main;
             isfunction $main && { 
-                : app_trace IS FUNCTION: $main, $*;
                 $main "$@";
                 return 1
             };
-            app_trace NOT Help, PARENT: $parent, args: $*;
+            comment NOT Help, PARENT: $parent, args: $*;
             ( printf "$parent %s\n" "[ help |";
             printf "$(app_kids ${parent}_ | pr -t4 | sed 's/^/        /') \n]\n" ) 1>&2
         ;;
@@ -461,8 +456,8 @@ needir ()
     : date: 2018-02-16;
     : date: 2020-03-04;
     report_notargcount 1 $# needed_directory && return 1;
-    [[ -d $1 ]] || mkdir $1;
-    echo $1
+    [[ -d "$1" ]] || mkdir "$1";
+    echo "$1"
 }
 nf () 
 { 

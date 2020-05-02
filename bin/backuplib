@@ -2,8 +2,29 @@ backup_copyright ()
 { 
     : date: 2019-04-22;
     : date: 2020-03-22;
-    comment "Copyright (C) 2005-2020, JYATL - Just Yet Another Testing Lab";
-    email_comment
+cat <<EOF
+
+Copyright (c) 2005-2020 Marty McGowan, JYATL - Just Yet Another Testing Lab
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+EOF
 }
 backup_allfiles () 
 { 
@@ -30,27 +51,10 @@ backup_depth ()
     : return the number of the deepest backup directory;
     : date 2017-03-05;
     : date: 2019-12-28;
-    find $(backup_directory) | max_depth
+    backup_directories
+    find $BACKUP_DIRECTORY | max_depth
 }
-backup_directory () 
-{ 
-    : returns relative name of locale-dependent BACKUP Directory;
-    : former dir_backup;
-    : date: 2019-11-16;
-    : date: 2019-12-28;
-    set -- $(_backup_dirver);
-    echo $1
-}
-version_directory () 
-{ 
-    : returns relative name of locale-dependent VERSION Directory;
-    : former dir_version;
-    : date: 2019-11-16;
-    : date: 2019-12-28;
-    set -- $(_backup_dirver);
-    echo $2
-}
-_backup_dirver () 
+backup_directories ()
 { 
     : default BACKUP is .bak ... directory;
     : default VERSION is .ver directory;
@@ -68,20 +72,21 @@ _backup_dirver ()
             shift 2
         ;;
     esac;
-    setenv DIR_BACKUP $1 > /dev/null;
-    setenv DIR_VERSION $2 > /dev/null;
-    echo $*
+    setenv BACKUP_DIRECTORY $1 > /dev/null;
+    setenv VERSION_DIRECTORY $2 > /dev/null;
 }
 backup_files () 
 { 
     : return the names of the local files with a backup copy;
     : date: 2019-12-18;
     : date: 2019-12-28;
-    indir $(backup_directory) onlyfiles
+    backup_directories
+    indir $BACKUP_DIRECTORY onlyfiles
 }
 backup_main () 
 { 
     : ~ backup file ...;
+    backup_directories
     function backup_here () 
     { 
         : recursively backup a changed file in the backup tree;
@@ -91,7 +96,7 @@ backup_main ()
         : file in that spot.;
         : date: 2019-12-28;
         :;
-        set $1 $(backup_directory) ${2:-$PWD};
+        set $1 $BACKUP_DIRECTORY ${2:-$PWD};
         [[ -d $2 ]] || mkdir $2;
         [[ $3 == $PWD ]] && { 
             cmp $1 $2/$1 2> /dev/null 1>&2 && return
@@ -134,13 +139,14 @@ backup_sync ()
 { 
     : pushes files no-longer backed up one level down the backup tree.;
     : date: 2019-12-28;
+    backup_directories
     function backup_outdated () 
     { 
         : lists backup_files no longer in current directory;
         : date: 2019-12-28;
-        comm -23 <( ignore pushd $(backup_directory); onlyfiles; ignore popd) <(onlyfiles)
+        comm -23 <( ignore pushd $BACKUP_DIRECTORY; onlyfiles; ignore popd) <(onlyfiles)
     };
-    local bak=$(backup_directory);
+    local bak=$BACKUP_DIRECTORY;
     [[ $(basename ${PWD%/$bak}) == $bak ]] && { 
         dirs 1>&2;
         return 1
@@ -156,35 +162,35 @@ backup_outdated ()
     : lists backup_files no longer in current directory;
     : date: 2019-12-09;
     : date: 2019-12-28;
-    comm -23 <( ignore pushd $(backup_directory); onlyfiles; ignore popd) <(onlyfiles)
+    backup_directories
+    comm -23 <( ignore pushd $BACKUP_DIRECTORY; onlyfiles; ignore popd) <(onlyfiles)
 }
 backup_local () 
 { 
     : apps have ENTRY functions and LOCAL functions;
-    ${*:-echo} backup_{copies,local,entry,dirver,here,one,needed,outdated}
+    ${*:-echo} backup_{copies,local,here,one,needed,outdated}
 }
 backup_entry () 
 { 
     : date: 2020-01-21;
-    ${*:-echo} backup_{main,entry,depth,directory,{all,}files,sync,ver,copyright,paper}
+    ${*:-echo} backup_{main,entry,depth,directories,{all,}files,sync,ver,copyright,paper}
 }
 backup_ver () 
 { 
     : creates a VERSION of the CURRENT BACKUP;
     : VER_TIME is a DATE/TIME stamped directory in the VERSION directory;
     : a LINK is sufficient if not mandatory.;
-    : date 2017-03-05;
-    : date 2019-04-28 remove opional argument name for version;
-    : date: 2019-12-28;
-    report_notdirectory $(backup_directory) && return 1;
-    :;
-    set -- $(backup_copies);
+    : date: 2017-03-05;
+    : date: 2019-04-28 remove opional argument name for version;
+    : date: 2020-05-02 add user-definable BACKUP_VERSION_FORMAT
+    : ${BACKUP_VERSION_FORMAT:="%Y%m_%b/%d_%a/%H%M%S"}    
+    backup_directories
+    report_notdirectory $BACKUP_DIRECTORY && return 1;
+    local vername=$(date +"${BACKUP_VERSION_FORMAT}")
+    echo "$VERSION_DIRECTORY/$vername"
+    return    
+    set -- $(backup_files | sed "s/^/$BACKUP_DIRECTORY\//")
     set -- ${*:-/dev/null};
-    ln -f $* $(needir $(version_directory)/$(ver_time))
+    ln -f $* $(needir "$VERSION_DIRECTORY/$vername")
 }
-backup_copies () 
-{ 
-    : for the backup files, the name of the top copy;
-    : date: 2019-12-28;
-    backup_files | sed "s/^/$(backup_directory)\//"
-}
+

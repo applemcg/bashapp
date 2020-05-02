@@ -28,7 +28,7 @@ notice and this notice are preserved.
 
 @c ............................................................	Top Node ..
 @ifnottex
-@node Top, Backup Commands, (dir), (dir)
+@node Top
 @top Backup Any File
 
 This manual documents the Only Backup You'll Ever Need.
@@ -43,7 +43,6 @@ The backup commmand
 * User Discovery::          Inspect the functions
 * Download Install::       
 * Index::                   Complete index.
-
 @end menu
 
 
@@ -53,10 +52,9 @@ The backup commmand
 @chapter Backup Commands
 @cindex commands, backup
 @cindex sub-function
-@cindex datatype
 @cindex main
 
-Backup saves backup copies of CHANGED files, without regard to datatype.
+Backup saves backup copies of CHANGED files, without regard file type or suffix.
 
     $ backup file.txt file.jpg file.dat ...
 
@@ -67,30 +65,26 @@ is the short-cut for
 This menu shows the backup sub-functions which may be used as the
 first argument to the backup command.
 
-
 @menu
 
-
-* allfiles::    when backing up everythign
-* copyright::   
+* allfiles::    when backing up everything
+* copyright::   the ``MIT License''
 * depth::       how deep, many backup levels
-* directory::   the customizable backup sub-directory
-* files::       the current backup list
-* lib::         for executables
-* main::        there's a shortcut
+* directories:: sets the backup, version directories Environment Variables
+* entry::       names these functions
+* files::       the current list of backup files
+* main::        recursively backs up a changed file into the backup tree
 * paper::       README
 * sync::        are some backup files no longer needed
 * ver::         and Versions too.
-
 @end menu
 
 @c ............................................................	allfiles ..
-@node allfiles, copyright, Backup Commands, Backup Commands
+@node allfiles
 @section allfiles
 
-A large directory, with many files, all of which need backup, allfiles
-uses some shortcuts to trim the list of files to backup.   This takes
-no further arguments.
+A large directory uses some shortcuts to trim the list of files to
+backup.  This takes no further arguments.
 
     $ backup allfiles
 
@@ -98,19 +92,59 @@ is equivalent to
 
     $ backup *
 
-but likely much faster, especially when few files have been changed.
+but likely much faster
 
 @c ............................................................	copyright ..
-@node copyright, depth, allfiles, Backup Commands
+@node copyright
 @section copyright
 @cindex copyright
 
     $ backup  copyright
 
-prints a copyright notice.
+prints a copyright notice: this, the ``MIT License''.
+
+Copyright (c) 2005-2020 Marty McGowan, JYATL - Just Yet Another Testing Lab
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+@c ............................................................	directories ..
+@node directories
+@section directories
+@cindex directories
+@cindex environment
+@cindex user option
+
+This function sets the Environment Variable names:
+
+BACKUP_DIRECTORY
+VERSION_DIRECTOR
+
+The feature, using an optional sourceable backup_user gives the user
+to set alternate backup, version directories for another part of the
+user's file tree.
+
+    $ backup directories
+
+
 
 @c .............................................................. depth	..
-@node depth, directory, copyright, Backup Commands
+@node depth
 @section depth
 @cindex depth
 @cindex directoty
@@ -121,47 +155,36 @@ prints a copyright notice.
 This returns a number of recursive backups being retained. To see the
 files at a certain depth of backup
 
-    $ dir=$(backup directory)
-    
+    $ backup directories
+    $ dir=$BACKUP_DIRECTORY
     $ find $dir/$dir/$dir/$dir/$dir/$dir/$dir/$dir/$dir/ -type f
 
 A good practice is to save a VERSION from time to time and trim the
-ssubtreebackups.   See the ver function.
+subtreebackups.   See the ver function.
 
-@c .......................................................... directory ..
-@node directory, files, depth, Backup Commands
-@section directory
-@cindex directory
-@cindex customizatin
+@c .............................................................. entry	 ..
+@node entry
+@section entry
+@cindex entry
 
-The backup directory has a default, a sub-directory.  A user may
-customize the name of the backup and version sub-directories from any
-subtree of their account.  See the Environment Variables to set the
-customization.
-
-The command:
-
-    $ backup directory
-
-returns the local backup name
+Lists the backup apps entry points, its callable subfunctions, the
+commands.
 
 @c .............................................................. files	 ..
-@node files, lib, directory, Backup Commands
+@node files
 @section files
+@cindex comm
 @cindex files
 
-@c ................................................................ lib	..
-@node lib, main, files, Backup Commands
-@section lib
+The list of currently backed up files. Use comm to distinguish between
+the those and the unbacked up files.
 
+    $ comm -23 <(ls) <( backup files )
 
-This feature is OBSOLESCENT.
-
-It has been used in the past explicitly set the backup file permission
-to EXECUTABLE. 
+shows the files (and directories) in current directory not being backed up
 
 @c ............................................................... main	..
-@node main, paper, lib, Backup Commands
+@node main
 @section main
 
 The longhand version of the backup command.
@@ -169,11 +192,10 @@ The longhand version of the backup command.
      $ backup main filea fileb ...
 
 is the formal function for the 'no argument' version of the
-the program.   This for historical reasons
-
+the program.   This for historical reasons.
 
 @c .............................................................. paper	..
-@node paper, sync, main, Backup Commands
+@node paper
 @section paper
 
 The backup paper
@@ -183,32 +205,118 @@ The backup paper
 function 
 
 @c ............................................................... sync	..
-@node sync, ver, paper, Backup Commands
+@node sync
 @section sync
 
 @c ................................................................ ver	..
-@node ver,  , sync, Backup Commands
+@node ver
 @section ver
+@cindex version
+@cindex backup
+@cindex environment
+@cindex sync
+
+The ver command creates a version from the current backup files.  Files
+in the top BACKUP_DIRECTORY are linked to the directory in the version tree
+given by the command:
+
+    $ echo $VERSION_DIRECTORY/$(date +''${BACKUP_VER_FORMAT}'')
+
 
 @c .............................................. Environment Variables	..
-@node Environment Variables, Download Install, Backup Commands, Top
+@node Environment Variables
 @chapter Environment Variables
+@cindex directory
+@cindex backup
+@cindex version
+@cincex root
+
+The environment variables allow user-customization to choose the
+backup and version directory  names.  The backup process relies on
+recursively nested names of the backup directory.  Therefore, the
+backup directory is a sub-directory of the files being backed up.
+
+@menu
+
+* directory root::  the backup, version roots
+* version format::  dated or named versions
+* alternate root::  different place, different root
+
+@end menu
+
+@c ..................................................... directory root	..
+@node directory root
+@section  directory root
+@cindex directory
+@cindex backup
+@cindex version
+@cindex root
+
+The default root of recursively deep backup tree is .bak, with successively
+named deep backup directories.  
+
+
+The root of the version directory may be any name,
+preferably a local sub-directory. 
+
+The two default environment variable names:
+    
+    $ setenv BACKUP_DIRECTORY  .bak
+    $ setenv VERSION_DIRECTORY .ver
+
+The VERSION_DIRECTORY is the root of the version history.  The current
+version is stored in a subdirectory given by
+
+    $ setenv BACKUP_VERSION_FORMAT %Y%m_%b/%d_%a/%H%M%S
+
+@c ..................................................... version format	..
+@node version format
+@section version format
+@cindex directory
+@cindex backup
+@cindex version
+@cindex root
+
+@c ..................................................... alternate root	..
+@node alternate root
+@section alternate root
+@cindex directory
+@cindex directories
+@cindex backup
+@cindex version
+@cindex root
+@cindex Windows OS
+
+An alternate root allows the user to emply two conventions for the root names
+for backup and version trees.   The situation arose in a shared installation
+with Windows users.  Directory or folder names with a leading period, namely
+.bak and .ver present conceptual and operational problems.
+
+An alternate root is established by setting the USER_BACKUP_AREA
+
+    $ setenv USER_BACKUP_AREA       /Dropbox/FileShare
+    $ setenv ALTERNATE_BACKUP_DIRS  ``back version''
+
+Where the Dropbox directory may be at any point in the filesystem and
+the ALTERNATE_BACKUP_DIRS name the respective backup and version
+trees.
+
+
+
 
 @c ................................................... Download Install	..
-@node Download Install, User Discovery, Environment Variables, Top
+
+@node Download Install
 @chapter Download Install
 
-@c ................................................... Download Install	..
-@node User Discovery, Index, Download Install, Top
+@c ..................................................... User Discovery	..
+@node User Discovery
 @chapter User Discovery
 
 @c ............................................................	Index ..
-@node Index,  , User Discovery, Top
+@node Index
 @unnumbered Index
 
 @printindex cp
 
 @bye
-
-
-

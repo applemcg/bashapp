@@ -30,6 +30,16 @@ having made this statement imply future intent.
   
 + complete removal of app_{trace,pause}, trace_{call,stderr}... from utillib
 
+## [0.3.7] - 2020-05-02 backup_directories, copyright
+
+### CHANGED 
+
++ eliminated _backup_dirver & {backup,version}_directory `backup_directories`,
+  moving access to values to Environment Variables `{BACKUP,VERSION}_DIRECTORY` 
+  
++ `backup_copyright` -- swithch to MIT License
+
+
 ## [0.3.6] - 2020-04-28 backup_user
 
 ### ADDED 

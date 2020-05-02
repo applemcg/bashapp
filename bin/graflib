@@ -156,7 +156,7 @@ graf_entry ()
 }
 graf_version () 
 { 
-    echo graf_version 0.3.6 2020-04-28
+    echo graf_version 0.3.7 2020-05-02
 }
 graf_init () 
 { 
