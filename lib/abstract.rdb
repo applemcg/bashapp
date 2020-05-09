@@ -1,0 +1,38 @@
+funame	abstract
+------	--------
+_shd_mfgd	read -p "$(myname) ( $* )" < /dev/tty
+shd_abstract	return functionName, one-line function abstract
+shd_all	
+shd_apify	comment-free code, less definition and braces
+shd_assert	~ function
+shd_clean	removes empty doc strings from stdin
+shd_collect	collect functions, defaulting to SET
+shd_copyright	
+shd_demo	
+shd_entry	entry points into shd_app
+shd_getdate	test for file arguments
+shd_getlibr	collect date-stamps from functions, by args
+shd_history	list LAST_CHANGEDATE FUNCTION for each function in Environment
+shd_init	
+shd_justcolon	returns leading colon-comments from a SINGLE function
+shd_latest	uses: shd_getdate awk
+shd_listformat	produce SHD listformat for functions tags
+shd_longrecord	query all non-date tags and date with reason
+shd_mfgd	manufactured function arguments
+shd_mydoc	retreive the comment header of the Calling Function
+shd_mydoc_case	this is a test of shd_mydoc. One Argument is required
+shd_mydoc_notfunction	testcase for shd_mydoc not function
+shd_mydoc_test	test cases for shd_mydoc. One Argument is required
+shd_nonentry	
+shd_oc	makes conventional name for shdoc in SHD family
+shd_one	this is a shell doclib shdoc "abstract"
+shd_setdate	appends date tag to function, avoiding redundancy
+shd_summary	
+shd_taglist	write the tagged fields in list format
+shd_tagnames	
+shd_tohelp	
+shd_top	
+shd_unmfgd	UNmanufactured function arguments
+shd_with	
+shdoc	the whole shdoc
+shd_abscollect	collect function abstracts

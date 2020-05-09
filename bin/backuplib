@@ -188,7 +188,6 @@ backup_ver ()
     report_notdirectory $BACKUP_DIRECTORY && return 1;
     local vername=$(date +"${BACKUP_VERSION_FORMAT}")
     echo "$VERSION_DIRECTORY/$vername"
-    return    
     set -- $(backup_files | sed "s/^/$BACKUP_DIRECTORY\//")
     set -- ${*:-/dev/null};
     ln -f $* $(needir "$VERSION_DIRECTORY/$vername")

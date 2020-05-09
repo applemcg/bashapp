@@ -30,15 +30,21 @@ having made this statement imply future intent.
   
 + complete removal of app_{trace,pause}, trace_{call,stderr}... from utillib
 
-## [0.3.7] - 2020-05-02 backup_directories, copyright
+
+## [0.3.7] - 2020-05-02 backup_directories, copyright, texi
 
 ### CHANGED 
 
 + eliminated _backup_dirver & {backup,version}_directory `backup_directories`,
   moving access to values to Environment Variables `{BACKUP,VERSION}_DIRECTORY` 
   
-+ `backup_copyright` -- swithch to MIT License
++ `app_isa` -- eliminated `app_trace` in behalf of PS4
+  
++ `copyright` -- to MIT License
 
++ `lib/backup.texi` -- developing backup.INFO, exercise encourages consolidation
+
++ `needir` -- for `BACKUP_VERSION_FORMAT` to handle spaces in the name
 
 ## [0.3.6] - 2020-04-28 backup_user
 

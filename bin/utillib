@@ -556,10 +556,7 @@ wpl ()
 }
 trace_call () 
 { 
-    : obsolescent, retiring in behalf of app_trace;
-    : date: 2017-07-18;
-    : date: 2018-02-16;
-    : date: 2020-04-23;
+    : obsolete, retiring in behalf of app_trace;
     trace_stderr "$@"
 }
 trace_stderr () 

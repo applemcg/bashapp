@@ -218,7 +218,7 @@ graf_scenario ()
     : where an APP is also a function library, but entire to itself;
     : each APP should have an _INIT function, so when SOURCEd,;
     : it offers instructions on how to begin;
-    cat <<'EOF'
+    cat  <<'EOF'
 
     $ graf copy libA
     $ graf copy libB
