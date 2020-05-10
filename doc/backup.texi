@@ -1,0 +1,388 @@
+\input texinfo
+@settitle The Only Backup You'll Ever Need
+
+@copying
+
+This is the User's Manual for the Only Backup You'll Ever Need.
+
+Here is
+@xref{copyright,,the copyright}.
+
+@end copying
+
+@include ../lib/backupversion.txt
+
+@c ............................................................	Title Page ..
+@titlepage
+@title Backup Any File
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@c Output the table of the contents at the beginning.
+@contents
+
+@c ............................................................	Top Node ..
+@ifnottex
+@node Top
+@top Backup Any File
+
+This manual documents the Only Backup You'll Ever Need.
+
+(version @value{VERSION}, @value{UPDATED}).
+
+@end ifnottex
+
+Backup saves backup copies of CHANGED files, without regard to file
+type or suffix.  It saves changed files in an arbitrarily recursive
+descent chain of backup directories.  The most recent backup is in
+the immediate sub-directory, the prior is in the second sub-directory,
+and so on ...
+
+Since this can easily get out of hand, two features are available:
+plumb the @xref{depth} to find out the maximum number of times any of
+the local files was backed up, and a simple @xref{ver}sion system to
+save the more relevant copies.  These may be further trimmed, but no
+simple facility exists to remove multiple versions.
+
+@menu
+* Routine Usage::         Backup, Inspecting, Tree Trimming 
+* Backup Commands::       Individual functions
+* Environment Variables:: Runtime Customizing
+* Download Install::      How to Obtain, Install
+* Modification::          Developer Customization
+* Appendix::              Not so Routine, but Usefull examples
+* Index::                 Complete index.
+@end menu
+
+
+@c ............................................................ Routine	..
+@node Routine Usage
+@chapter Routine Usage
+@cindex backup
+@cindex version
+@cindex main
+
+In regular use, backup is followed by a list of files to backup:
+
+@code{backup file.txt file.jpg file.dat ...}
+
+is the short-cut for
+
+@code{backup main  file.txt file.jpg file.dat ...}
+
+The just-backed-up file is available from the backup directory,
+and may be retrieved by:
+
+@code{cp $BACKUP_DIRECTORY/file.txt .}
+
+The prior version is available in the next lower level:
+
+@code{cp $BACKUP_DIRECTORY/$BACKUP_DIRECTORY/file.txt .}
+
+And so on. @xref{depth}
+
+@c ............................................................	Commands ..
+@node Backup Commands
+@chapter Backup Commands
+@cindex commands, backup
+@cindex sub-function
+@cindex main
+
+The backup commands are all typed at the command line. Invariably
+backup is the first word entered.
+
+This menu shows the backup sub-functions which may be used as the
+first argument to the backup command.
+
+@menu
+
+* allfiles::    when backing up everything
+* copyright::   the ``MIT License''
+* depth::       how deep, many backup levels
+* files::       the current list of backup files
+* help::        lists the backup sub-functions
+* main::        recursively backs up a changed file into the backup tree
+* paper::       README
+* sync::        are some backup files no longer needed
+* ver::         and Versions too.
+@end menu
+
+@c ............................................................	allfiles ..
+@node allfiles
+@section allfiles
+
+A large directory uses some shortcuts to trim the list of files to
+backup.  This takes no further arguments.
+
+@code{backup allfiles}
+
+is equivalent to
+
+@code{backup *}
+
+but likely much faster
+
+@c ............................................................	copyright ..
+@node copyright
+@section copyright
+@cindex copyright
+
+ @code{backup copyright}
+
+prints a copyright notice: this, the ``MIT License''.
+
+Copyright (c) 2005-2020 Marty McGowan, JYATL - Just Yet Another Testing Lab
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+@c .............................................................. depth	..
+@node depth
+@section depth
+@cindex depth
+@cindex directory
+@cindex ver
+
+Backup saves changed files in an arbitrarily deep recursive
+descent chain of backup directories.  The depth is determined by:
+
+@code{backup depth}
+
+returns the number of recursive backups for the most backed-up file
+in the current directory and the backup path to the file.
+
+Some files may only have been backed up once, larger number isn't
+unlikely. 
+
+
+The latest backup is stored in 
+
+@code{dir=$BACKUP_DIRECTORY}
+
+@code{find $dir/$dir/$dir/... -type f}
+
+@c .............................................................. files	..
+@node files
+@section files
+
+Usage: @code{backup files}
+
+returns the list of files in the $BACKUP_DIRECTORY, without any backup
+directory path information, simply the file names.  So, for example:
+
+@code{ backup $(backup files)}
+
+backs up the local copies of any changed backup files. The list
+may be used on the local files:
+
+@code{ ls -lrt $(backup files)}
+
+When an otherwise un-backed up file is backed up, it joins the list of
+backup files.
+
+@c .............................................................. help	..
+@node help
+@section help
+
+@c ............................................................... main	..
+@node main
+@section main
+
+@c .............................................................. paper	..
+@node paper
+@section paper
+
+@c ............................................................... sync	..
+@node sync
+@section sync
+
+
+@c ................................................................ ver	..
+@node ver
+@section ver
+@cindex directory
+@cindex backup
+@cindex version
+@cindex root
+
+Used: @code{backup ver}
+
+where no arguments are required.  This creates a directory:
+
+./$VERSION_DIRECTORY/$BACKUP_VERSION_FORMAT
+
+and links all the files in the current backup directory
+to that version:
+
+@code{ln -f $BACKUP_DIRECTORY/* $VERSION_DIRECTORY/$BACKUP_VERSION_FORMAT}
+
+
+@c .............................................. Environment Variables	..
+@node Environment Variables
+@chapter Environment Variables
+@cindex directory
+@cindex directories
+@cindex backup
+@cindex version
+@cindex root
+@cindex Windows OS
+
+These environment variables allow users to customize the directory locations
+for the backup files and related versions.  Two features are available. One
+offers alternate names for the backup tree and the version tree;  the other
+allows a different naming convention in another file hierarchy
+
+These Environment Variables affect the backup and Version locations.  They
+all have conventient, non-empty default values:
+
+@code{setenv BACKUP_DIRECTORY .bak}
+
+@code{setenv VERSION_DIRECTORY .version}
+
+@code{setenv USER_BACKUP_AREA  /dev/null}
+
+@code{setenv ALTERNATE_BACKUP_DIRS  "back version"}
+
+@code{setenv BACKUP_VERSION_FORMAT %Y%m_%b/%d_%a/%H%M%S}
+
+@menu
+
+* Alternate Backup Names::  Change Back and Version directories
+* Alternate Hierarchy::     In a Different File Hierarchy
+* User Adjustments::        How to Make Adjustments
+@end menu
+
+
+@c ............................................. Alternate Backup Names	..
+@node Alternate Backup Names
+@section Alternate Backup Names
+
+The BACKUP_DIRECTORY is the name of a recursively used sub-directory
+where the successive backup files are found.
+
+The VERSION_DIRECTORY is the root of the version history.  The current
+version is stored in a subdirectory given by
+
+
+@c ................................................ Alternate Hierarchy	..
+@node Alternate Hierarchy
+@section Alternate Hierarchy
+
+An alternate backup/version root allows the user to emply two
+conventions for the root names for backup and version trees.
+
+In every place in the file system, preferably, but not necessarily
+in the user's account, the BACKUP_DIRECTORY and the VESION_DIRECTORY
+assign the backup and version storage location.
+
+The user may specify a portion or portions of the file system tree by
+a name in the USER_BACKUP_AREA and two names in the ALTERNATE_BACKUP_DIRS.
+
+The need arises from a shared installation with Windows users.
+Directory or folder names with a leading period, namely .bak and .ver
+present conceptual and operational problems.
+
+Therefore, an alternate root is established by setting the USER_BACKUP_AREA:
+
+@code{setenv USER_BACKUP_AREA       /Dropbox/FileShare}
+
+@code{setenv ALTERNATE_BACKUP_DIRS  ``back version''}
+
+
+
+
+@c ................................................ User Adjustments	..
+@node User Adjustments
+@section User Adjustments
+
+The feature, using an optional sourceable backup_user gives the user
+to set alternate backup, version directories for another part of the
+user's file tree.
+
+Where the Dropbox directory may be at any point in the filesystem and
+the ALTERNATE_BACKUP_DIRS sets the respective backup and version
+trees. For example a file in $HOME/some/$USER_BACKUP_AREA/place
+will be backed up in $HOME/some/$USER_BACKUP_AREA/place/back
+with successive back/back/.. as necessary.
+
+A recent version of the same file will be found in
+$HOME/some/$USER_BACKUP_AREA/version/... BACKUP_VERSION_FORMAT ...
+
+The actual location will most likely, give a time-sensitive
+BACKUP_VERSION_FORMAT with this command, excuted in
+$HOME/some/$USER_BACKUP_AREA :
+
+@code{find version -type f | xargs ls -lrt}
+
+
+@c ................................................... Download Install	..
+@node Download Install
+@chapter Download Install
+
+
+@c ....................................................... Modification	..
+@node Modification
+@chapter Modification
+
+@c ........................................................... Appendix	..
+@node Appendix
+@appendix Appendix
+
+
+
+@menu
+
+* Backup in Scripts::    It's not just for the command line
+* On Deep Backups::      Watching the backup tree
+* When to Version::      Why, How 
+* Sample backup_user::   Copy the list of Enviroment Variable resets
+@end menu
+
+
+
+@c .................................................. Backup in Scripts	..
+@node Backup in Scripts
+@section Backup in Scripts
+
+
+@c .................................................... On Deep Backups	..
+@node On Deep Backups
+@section On Deep Backups
+
+
+@c .................................................... When to Version	..
+@node When to Version
+@section When to Version
+
+
+@c ..............;.................................. Sample backup_user	..
+@node Sample backup_user
+@section Sample backup_user
+
+@include ../etc/backup_user
+
+@c .............................................................. Index	..
+@node Index
+@unnumbered Index
+
+@printindex cp
+
+@bye
+

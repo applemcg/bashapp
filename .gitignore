@@ -3,15 +3,18 @@
 
 .*
 .*~
+*~
 *#
 
 # ignore these suffixes
 
-*.md~
 *.css
 *.err
 *.html
+*.info
 *.log
+*.md~
+*.texi~
 
 # these directories
 
@@ -19,3 +22,4 @@ ar/
 
 # and these files
 
+fixlib

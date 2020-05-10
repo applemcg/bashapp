@@ -407,7 +407,17 @@ llrt ()
 max_depth () 
 { 
     : date: 2017-03-05;
-    awk -F/ '{ if( NF>max_depth) max_depth=NF } END { print max_depth-1 }'
+    awk -F/ '{
+
+        if( NF>max_depth) {
+            max_depth=NF
+            max_path=$0
+	}
+    }
+    END {
+          printf "%d %s\n",  max_depth, max_path
+	}
+        '
 }
 mkdir () 
 { 

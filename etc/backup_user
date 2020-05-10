@@ -1,0 +1,22 @@
+#! /usr/bin/env bash
+# --------------------------------------------------------- backup_user	--
+#
+# ------------------------------------ Universally True	--
+#
+    export BACKUP_VERSION_FORMAT %Y%m/%d-%H%M%s
+#
+#  ---------------------------------------- Mostly True	--
+#
+    export BACKUP_DIRECTORY    .backup
+    export VERSION_DIRECTORY   .version
+#     
+# ------------------------------------ Exceptional Case	--
+#
+# any files under a ./src directory 
+#
+# n.b. even reusing .version; it must be specified
+#
+    export USER_BACKUP_AREA=/src
+    export ALTERNATE_BACK_DIRS=".src .version"
+
+
