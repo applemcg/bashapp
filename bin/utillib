@@ -2,15 +2,16 @@ proc_parent_test ()
 { 
     : test both facets of proc_parent: terminal shell or SCRIPT?;
     : date: 2020-02-03;
+    : date: 2020-05-20;
     set -- ./proc_bash proc_parent;
     echo FUNCTION $($2);
     echo =====;
-    printf "#! /usr/bin/env bash\n%s\n%s\n" "$(qf $2)" $2 > $1;
+    printf "#! /usr/bin/env bash\n%s\n%s\n" "$(declare -f $2)" $2 > $1;
     chmod +x $1;
     echo SCRIPT $($1);
     echo =====;
     echo the function;
-    qf $(myname) | sed 's/^/    /';
+    declare -f $(myname) | sed 's/^/    /';
     echo ----;
     echo the script:;
     sed 's/^/    /' $1
@@ -105,22 +106,26 @@ proc_parent ()
 }
 runfrom () 
 { 
-    : usage: ~ DIRECTORY function args OR return;
+    : the calling function is RUN FROM the 1st Arg DIRECTORY;
+    : usage: ~ DIRECTORY CMD args .. OR return;
+    : e.g. "funct () { runfrom $HOME/lib/... || return; cmmds ...; }";
+    : uses: indir cdx;
     : date: 2019-09-10;
     : date: 2020-02-04 simplify, test using indir;
-    : app_trace ENTERING: $PWD, $*;
+    : if in the directory, RETURN to let the function continue;
+    : date: 2020-06-20;
     [[ $PWD = $(indir $1 pwd) ]] && return;
-    : app_trace HUNTING: $PWD, DIR: $1.;
+    : ----------------------------------- if NOT, then go there --;
     ignore pushd $1;
     shift;
+    : ------------------------------------------ who called me? --;
     local cmd=$(myname 2);
-    : app_trace RUNNING: $PWD, cmd: $cmd, $#: $@;
+    read -p "CMD: $cmd, args: $@";
     $cmd $@;
-    : app_trace HAVE RUN: $PWD, $#: $@;
+    : ------------ ran from the directory, so restore the stack --;
     ignore popd;
-    : app_trace POPPED: $PWD, $#: $@;
     cdx 1>&2;
-    : dapp_trace CLEARED: $PWD, $#: $@;
+    : ------------------- this return, to avoid recursive loop --;
     return 1
 }
 setenv () 
@@ -260,18 +265,14 @@ for_nomar ()
     : until number of returned arguments is unchanged.;
     : date: 2016-11-10;
     : date: 2019-03-10 isolating the command saves ignoring it in the loop;
-    : app_trace $*;
     : date: 2019-08-29;
     local cmmd=$1;
     shift;
-    : app_trace CMMD: $cmmd, ARGS: $*;
     while true; do
         local num=$#;
         set $(args_uniq $* $($cmmd $*));
-        app_trace AFTER $CMMD "num: $num, $#";
         [[ $num -eq $# ]] && break;
     done;
-    : app_trace RETURN $*;
     echo $*
 }
 foreach () 
@@ -381,13 +382,10 @@ indir ()
 { 
     : date: 2017-05-29;
     : date: 2018-10-09;
-    : app_trace $*;
     report_notdirectory $1 && return 1;
-    : app_trace $*;
     pushd $1 > /dev/null;
-    : app_trace $*;
-    eval ${@:2};
-    : app_trace $*;
+    shift;
+    eval "$@";
     popd 1>&2 > /dev/null
 }
 lib () 

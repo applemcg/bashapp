@@ -40,9 +40,16 @@ shd_assert ()
     : ~ function;
     : returns: candidate comments;
     : turns report_not... into colon-comment for docstring.;
+    : todo: use "cat/filter" trick between declare ... colons;
     : uses: shd_justcolon sed;
+    : date: 2020-05-11;
     report_notfunction $1 && return 1;
-    declare -f ${1:-$(myname)} | sed 's/^\( *\)\(report_not\)/\1: \2/' | shd_justcolon
+    for fun in ${1:-$(myname)};
+    do
+        declare -f $fun | sed '
+          s/^\( *\)\(report_not\)/\1: \2/
+      ' | shd_colons;
+    done
 }
 shd_clean () 
 { 
@@ -174,14 +181,14 @@ shd_init ()
 }
 shd_justcolon () 
 { 
-    : returns leading colon-comments from a SINGLE function;
-    report_notpipe && return 1;
-    awk '
-    NR > 2 {
-             if ( $1 !~ /^:/ ) exit
-             else              print
-           }
-    '
+    : returns leading colon-comments from functions;
+    : date: 2020-05-11;
+    function _justcolon () 
+    { 
+        isfunction $1 || return;
+        declare -f $1 | shd_colons
+    };
+    foreach _justcolon $*
 }
 shd_latest () 
 { 
@@ -231,11 +238,12 @@ shd_mydoc ()
     : retreive the comment header of the Calling Function;
     : .. myname 2.., most likely due to a detected error;
     : date: 2019-11-23;
+    : date: 2020-05-11;
     set -- $(myname 2);
     report_notfunction $1 && return 1;
     { 
         printf "\nFUNCTION\t$1\n";
-        declare -f $1 | shd_justcolon
+        shd_justcolon $1
     } 1>&2
 }
 shd_mydoc_case () 
@@ -347,9 +355,10 @@ shd_taglist ()
     : date: 2020-03-01;
     : date: 2020-03-30;
     : date: 2020-04-05 quietly ignore non-functions for shd_listformat;
+    : date: 2020-05-11;
     isfunction ${1:-/dev/null} || return;
     printf "\nname\t%s\n" $1;
-    declare -f $1 | shd_justcolon | sed '
+    shd_justcolon $1 | sed '
 
         # clean the text upto the tag or shdoc comment
         s/^ *: *//
@@ -368,8 +377,9 @@ shd_tagnames ()
 shd_tohelp () 
 { 
     : date: 2019-10-04;
+    : date: 2020-05-11;
     printf "\n$1\n";
-    declare -f $1 | shd_justcolon | sed 's/.*:/    /'
+    shd_justcolon $1 | sed 's/.*:/    /'
 }
 shd_top () 
 { 
@@ -389,9 +399,10 @@ shd_with ()
 shdoc () 
 { 
     : the whole shdoc;
+    : date: 2020-05-11;
     isfunction ${1:-/dev/null} && { 
         printf "\nshdoc\t%s\n" $1;
-        declare -f $1 | shd_justcolon | awk '$2 !~ /:$/ { sub(/: /,""); print }'
+        shd_justcolon $1 | awk '$2 !~ /:$/ { sub(/: /,""); print }'
     }
 }
 shd_abscollect () 
@@ -400,5 +411,59 @@ shd_abscollect ()
     : date: 2020-05-08;
     rdb_hdr funame abstract;
     shd_abstract $*
+}
+shd_colon_test () 
+{ 
+    : test SHD COLON functions against its library;
+    : date: 2020-05-11;
+    function _shd_test () 
+    { 
+        :;
+        local fmt="\n%s\n==========\n";
+        cmmd=$1;
+        case $1 in 
+            foreach)
+                cmmd=$2
+            ;;
+        esac;
+        printf $fmt $cmmd;
+        $@
+    };
+    function run_colons () 
+    { 
+        declare -f $* | $1
+    };
+    set -- $(sfg shd_);
+    _shd_test shd_justcolon $*;
+    _shd_test shd_abstract $*;
+    _shd_test run_colons shd_colons $2 $3 $4;
+    _shd_test foreach shd_taglist $*
+}
+shd_colons () 
+{ 
+    : returns COLON comments from FIRST function;
+    : date: 2020-05-11;
+    report_notpipe && return 1;
+    awk '
+    NR > 2 {
+             if ( $1 !~ /^:/ ) exit
+             else              print
+           }
+    '
+}
+_shdoc () 
+{ 
+    : date: 2018-02-16;
+    : date: 2020-05-11;
+    report_notfunction $1 && return 1;
+    echo "function ${1}_doc {";
+    declare -f $1 | shd_justcolon;
+    echo "}"
+}
+shd_dateless () 
+{ 
+    : local of shd_abstract;
+    : date: 2020-05-11;
+    shd_justcolon $1 | grep -v ': date:'
 }
 shd_init  1>&2

@@ -289,7 +289,7 @@ report_usage ()
     : date: 2018-03-30;
     local caller=$(myname 3);
     case $caller in 
-        diff_pair)
+        ${SHOW_CALL_STACK:-/dev/null} )
             callStack;
             read -p "HALT, use ctrl-C" < /dev/tty > /dev/tty
         ;;

@@ -47,7 +47,8 @@ save the more relevant copies.  These may be further trimmed, but no
 simple facility exists to remove multiple versions.
 
 @menu
-* Routine Usage::         Backup, Inspecting, Tree Trimming 
+* Routine Usage::         Backup, Inspecting, Tree Trimming
+* Versions::              Simple, it uses uses Backup
 * Backup Commands::       Individual functions
 * Environment Variables:: Runtime Customizing
 * Download Install::      How to Obtain, Install
@@ -82,6 +83,38 @@ The prior version is available in the next lower level:
 @code{cp $BACKUP_DIRECTORY/$BACKUP_DIRECTORY/file.txt .}
 
 And so on. @xref{depth}
+
+@c ........................................................... Versions	..
+@node Versions
+@chapter Versions
+@cindex backup
+@cindex version
+@cindex directories
+
+Occasionally, the user wants to save the collection of files in a
+single directory and call it a version.  As it now stands, versions
+are saved in parallel directories in the version tree in the
+VERSION_DIRECTORY, in subdirectories given by the date-stamped
+BACKUP_VERSION_FORMAT.
+
+@code{setenv VERSION_DIRECTORY .ver}
+
+@code{setenv BACKUP_VERSION_FORMAT %Y%m_%b/%d_%a/%H%M%S}
+
+The occasion for a version is whenever the user needs one. @xref{When to Version}.
+
+The user command:
+
+@code{backup ver}
+
+It links the files in $BACKUP_DIRECTORY to the
+@code{$VERSION_DIRECTORY/$(date +$BACKUP_VERSION_FORMAT)} directory
+
+Note: in the current default, there is a three-level subdirectory,
+the year-month/day/time.  This seems a good compromise for the frequency
+of need to create a version.
+
+The format, and hence level of subdirectory, is controlled in the @xref{Environment Variables}.
 
 @c ............................................................	Commands ..
 @node Backup Commands
@@ -254,7 +287,7 @@ all have conventient, non-empty default values:
 
 @code{setenv BACKUP_DIRECTORY .bak}
 
-@code{setenv VERSION_DIRECTORY .version}
+@code{setenv VERSION_DIRECTORY .ver}
 
 @code{setenv USER_BACKUP_AREA  /dev/null}
 
@@ -265,7 +298,7 @@ all have conventient, non-empty default values:
 @menu
 
 * Alternate Backup Names::  Change Back and Version directories
-* Alternate Hierarchy::     In a Different File Hierarchy
+* Another Hierarchy::       In a Different File Hierarchy
 * User Adjustments::        How to Make Adjustments
 @end menu
 
@@ -281,9 +314,9 @@ The VERSION_DIRECTORY is the root of the version history.  The current
 version is stored in a subdirectory given by
 
 
-@c ................................................ Alternate Hierarchy	..
-@node Alternate Hierarchy
-@section Alternate Hierarchy
+@c .................................................. Another Hierarchy	..
+@node Another Hierarchy
+@section Another Hierarchy
 
 An alternate backup/version root allows the user to emply two
 conventions for the root names for backup and version trees.
@@ -299,14 +332,17 @@ The need arises from a shared installation with Windows users.
 Directory or folder names with a leading period, namely .bak and .ver
 present conceptual and operational problems.
 
+
+
+
+
+
+
 Therefore, an alternate root is established by setting the USER_BACKUP_AREA:
 
 @code{setenv USER_BACKUP_AREA       /Dropbox/FileShare}
 
 @code{setenv ALTERNATE_BACKUP_DIRS  ``back version''}
-
-
-
 
 @c ................................................ User Adjustments	..
 @node User Adjustments
@@ -331,7 +367,6 @@ $HOME/some/$USER_BACKUP_AREA :
 
 @code{find version -type f | xargs ls -lrt}
 
-
 @c ................................................... Download Install	..
 @node Download Install
 @chapter Download Install
@@ -345,17 +380,13 @@ $HOME/some/$USER_BACKUP_AREA :
 @node Appendix
 @appendix Appendix
 
-
-
 @menu
 
 * Backup in Scripts::    It's not just for the command line
 * On Deep Backups::      Watching the backup tree
-* When to Version::      Why, How 
+* When to Version::      Why, How
 * Sample backup_user::   Copy the list of Enviroment Variable resets
 @end menu
-
-
 
 @c .................................................. Backup in Scripts	..
 @node Backup in Scripts

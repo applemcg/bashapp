@@ -28,10 +28,52 @@ having made this statement imply future intent.
 + clean up introduction of `callStack` in `report_usage`,  a special purpose
   hook to capture a higher-up usage bug.
   
-+ complete removal of app_{trace,pause}, trace_{call,stderr}... from utillib
++ complete removal of app\_{trace,pause}, trace_{call,stderr}... from utillib
 
+## [0.3.9] - 2020-06-21 -- backup.texi, diagnostics, unit_test template
 
-## [0.3.7] - 2020-05-02 backup_directories, copyright, texi
+### ADDED
+
+shdlib:
+
++ shd_colons -- factored out colon-comment extraction
++ shd_colon\_test -- template for functions unit test
++ shd_dateless -- local of shd\_abstract, removes DATE tags
+
+### CHANGED
+
++ doc/backup.info -- moved from lib/...
+
+stdlib:
+
++ report\_usage -- added SHOW\_CALL_STACK hook
+
+utillib:
+
++ runfrom -- diagnostic hooks
+
+## [0.3.8] - 2020-05-10 backup directories, copyright, texi
+ 
+   Many benign updates from declare -f canonicalization.
+   consider finding a fix.
+   
+### ADDED
+
++ etc/backup_user -- a complete example
++ doc/backup.texi -- moved, and expanding sections.
+
+    this is the best debugger yet.  trying to read your instructions!
+	
++ `backup_help` -- helping to decide who really needs to be visiblep
+   
+### CHANGED
+
++ `backup_version` -- now separate from APP version, 0.3.1
++ `backup_depth` -- return number of deepest and relative path, and
++ `max_depth`
++ `backup_copyright` -- now the MIT license, expect other to follow
+
+## [0.3.7] - 2020-05-02 backup directories, copyright, texi
 
 ### CHANGED 
 
