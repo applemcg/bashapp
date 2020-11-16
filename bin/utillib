@@ -72,22 +72,18 @@ app_isa ()
 }
 f2file () 
 { 
-    : copy librarys Functions inTO separate FILEs;
-    : need NOT be run from librarys home.;
-    : enables spilling older definitions without;
-    : overwriting current function definitions.;
+    : copy library Functions inTO separate FILEs,;
+    : in directory named for the library;
     : date: 2017-07-10;
     : date: 2020-02-04 save DIRECTORY in home/lib;
     report_notfile ${1:-MissingFirstArgument} && return 1;
-    set -- $1 $(home)/lib/dir/$(basename $1) $(awk_file);
-    : app_trace $*;
-    if [ -d $2 ]; then
-        rm -f $2/*;
-    else
-        mkdir $2;
-    fi;
-    : app_trace $*;
-    grep -v '_init 1>&2$' $1 | awk -v dir=$2 -f $3 2> ~/tmp/f2file_$$.err;
+    set -- $1 $(home)/lib/dir/$(lib_name $1) $(awk_file);
+    read_devtty set: $*;
+    [[ -d $2 ]] && { 
+        rm -fr $2/*
+    };
+    mkdir -p $2;
+    cat $1 | awk -v dir=$2 -v quote="'" -f $3 2> .f2file_$$.err;
     echo $2
 }
 proc_parent () 
@@ -115,13 +111,13 @@ runfrom ()
     ignore pushd $1;
     shift;
     local cmd=$(myname 2);
-    : read_devtty RUNNING: $PWD, cmd: $cmd, $#: $@;
+    read_devtty RUNNING: $PWD, cmd: $cmd, $#: $@;
     $cmd $@;
     : read_devtty HAVE RUN: $PWD, $#: $@;
     ignore popd;
     : read_devtty POPPED: $PWD, $#: $@;
     cdx 1>&2;
-    : read_devtty CLEARED: $PWD, $#: $@;
+    read_devtty CLEARED: $PWD, $#: $@;
     return 1
 }
 setenv () 
@@ -330,7 +326,7 @@ fun_starter ()
 { 
     : generate STDERR-directed function calls to any_INIT functions;
     : date: 2018-02-16;
-    : date: 2020-83-21 ONLY echo the INIT functions on ALL;
+    : date: 2020-03-21 ONLY echo the INIT functions on ALL;
     report_notfile $1 && return 1;
     local cmmd="echo";
     for fun in $(functions $1 | grep _init$ | sort);
@@ -622,20 +618,462 @@ trace_test ()
     trace_toggle;
     declare -f read_devtty
 }
-rdu_abstract () 
+clean () 
 { 
-    : function one-line abstracts;
-    : date: 2020-09-24;
-    rdb_hdr name abstract;
-    foreach shd_abstract ${*:-shd_abstract} | nf gt 1
+    : lists files to CLEAN up, i.e. to RM -fr;
+    : optional args are the command -- $ clean rm -fr;
+    : optional '.toclean' file lists directory-specific files to clean;
+    : optional '.tokeep' file lists directory-specific files to Keep;
+    : date: 2016-12-27 -- add TOKEEP;
+    : date: 2017-07-10 -- added .tmp;
+    : date: 2019-03-12 -- added .acct.*;
+    ${*:-args_uniq} $(
+           : name existing files matching expressions,
+           ls -d *foo .[a-z] .*~ *~ .*lib {,.}*{,.}{err,out,swp,tmp}* .acct.* \#*# $(
+               [[ -f .toclean ]] && cat .toclean
+	   ) 2> /dev/null |  { [[ -f .tokeep ]] && grep -v -f .tokeep || cat; }
+     )
 }
-rdu_libtable () 
+field () 
 { 
-    : utility library home table report;
-    : date: 2020-09-24;
+    : date: 2017-05-11;
+    : date: 2017-07-18;
+    awk "{ print \$$1 }"
+}
+modified_today () 
+{ 
+    : was the FILE argument MODIFIED TODAY?;
+    : date: 2020-01-05;
+    : date: 2020-02-08;
+    function _modified_day () 
+    { 
+        set -- $(stat -t %d $1);
+        : app_trace mtime: ${10};
+        echo ${10:1:2};
+        unset $(myname)
+    };
+    report_notfile ${1:-/dev/null} && return 1;
+    set -- $(_modified_day $1) $(date +%d);
+    : app_trace $*;
+    [[ $1 == $2 ]]
+}
+pick () 
+{ 
+    : ~ arg ...;
+    : add positive replies to STDOUT;
+    : y -- add to output;
+    : Y -- add to output and Quit;
+    : q -- Quit;
+    : * -- ignore;
+    : fm Kernighan and Pike, Unix Programming Enviroment, 1984;
+    : date: 2018-06-22;
+    :;
+    for a in $*;
+    do
+        printf "%s\t?: " "$a" > /dev/tty;
+        read response < /dev/tty;
+        case $response in 
+            y*)
+                echo "$a" | field 1
+            ;;
+            Y*)
+                echo "$a" | field 1;
+                break
+            ;;
+            q*)
+                break
+            ;;
+            *)
+
+            ;;
+        esac;
+    done
+}
+swhich () 
+{ 
+    : find a function lib, first by WHICH, and not found in NAME_LIBRAY;
+    : an example of recursive decision;
+    : by arg count;
+    : 0 -- report;
+    : 1 -- try WHICH;
+    : 2 -- 2nd = swhich, an empty result from last call;
+    : 2 -- 2nd = /dev/null, an empty result from WHICH, try NAME_LIBRARY;
+    : 2 or 3 -- 2nd = file, its the function lib;
+    : date: 2020-10-01;
+    : date: 2020-10-02;
+    :;
+    read_devtty IN: $#, $*;
+    case $#.$2.$3 in 
+        0.*.*)
+            report_notargcount 1 $#;
+            return 1
+        ;;
+        1.*.*)
+            swhich $1 $(which $1) /dev/null;
+            return
+        ;;
+        2.swhich.*)
+            comment NO which or entry in NAME_LIBRARY;
+            return 1
+        ;;
+        2./dev/null.*)
+            swhich $1 $(rowhas name $1 < $(home)/lib/name_library.rdb | column library | headoff) swhich;
+            return
+        ;;
+        2.*.* | 3.*./dev/null | 3.*.swhich)
+            [[ -f $2 ]] && { 
+                echo $2;
+                return
+            }
+        ;;
+        *.*)
+            comment too many swhichs for $1: ${*:2};
+            return 1
+        ;;
+    esac;
+    comment NO which or entry in NAME_LIBRARY;
+    return 1
+}
+swhich_run () 
+{ 
+    : date: 2020-09-30;
+    printf "\n\n%s\t%s\n" swhich "<$1>";
+    swhich $1 | fourspaces
+}
+swhich_test () 
+{ 
+    : run which, name library, Ambiguous name, non-existant, and EMPTY;
+    : date: 2020-09-30;
+    foreach swhich_run functionlib chap04 chap foo ""
+}
+lib_name () 
+{ 
+    : for bin/*lib the basename, for locallib, the dirname;
+    : date: 2020-10-01;
+    report_notfile ${1:-"No File argument"} && return 1;
+    runfrom $(dirname $1) $(basename $1) || return;
+    case $1 in 
+        locallib)
+            echo $(basename $PWD)
+        ;;
+        *)
+            echo $(basename $1)
+        ;;
+    esac
+}
+table_me () 
+{ 
+    : the first argument writes its named table sorted;
+    : date: 2020-10-02;
+    report_notfunction $1 && return 1;
+    $1 | sorttable > $1.rdb;
+    echo $1.rdb
+}
+tag_count () 
+{ 
+    : date: 2020-10-02;
+    rdb_hdr tag count;
+    field 1 < shd_alldata.txt | sort | uniq -c | awk 'NF > 1 { printf "%s\t%6d\n", $2, $1 }'
+}
+argnumber () 
+{ 
+    : returns argument position of first arg;
+    : ~ match ... ?match ...;
+    : date: 2018-10-29;
+    : date: 2020-11-14;
+    let i=0;
+    for a in ${@:2};
+    do
+        let i=$i+1;
+        [[ $a == $1 ]] && { 
+            echo $i;
+            return
+        };
+    done;
+    echo 0
+}
+fields () 
+{ 
+    : -- the first two lines of the table;
+    : TAB separated;
+    : field1 another more ...;
+    : ------ ------- ---- ---;
+    : app_trace $*;
+    : date: 2020-11-14;
+    ( echo $*;
+    echo $* | sed 's/[^ ]/-/g' ) | sed 's/  */	/g'
+}
+isint () 
+{ 
+    : TRUE if first arg IS an INTEGER;
+    : ref: https://stackoverflow.com/questions/24412721/...;
+    : ... elegant-solution-to-implement-timeout-for-bash-commands-and-functions/24413646;
+    : date: 2020-05-17;
+    : date: 2020-11-14;
+    [ "$1" != "" -a "${1//[0-9-]}" = "" ]
+}
+l2t () 
+{ 
+    : copy a LST into a companion RDB;
+    : date: 2020-10-20;
+    : date: 2020-11-14;
+    set -- ${1%.*};
+    set $1.lst $1.rdb;
     report_notfile $1 && return 1;
-    set $1 ${1%.*};
-    ( rdb_hdr name library table;
-    do_whf $(column name < $1 | headoff ) ) | compute " table = \"$2\""
+    listtotable < $1 > $2
+}
+newest () 
+{ 
+    : returns TRUE for first - TARGET;
+    : .. newest of remainder - DEPENDENT;
+    : date: 2017-04-16;
+    : date: 2017-07-16;
+    : date: 2020-11-14;
+    local caller=$(myname 2);
+    : app_trace trace $*;
+    [[ -f "$1" ]] || { 
+        comment $caller NO TARGET $1;
+        return 1
+    };
+    local target=$1;
+    shift;
+    while [[ -n "$1" ]]; do
+        [[ "$target" -ot "$1" ]] && { 
+            comment $caller NEWER DEPENDENT $1 than $target;
+            return 1
+        };
+        shift;
+    done;
+    comment $caller NEWEST TARGET $target;
+    return 0
+}
+rcat () 
+{ 
+    : in place of cat command where we can afford to wait,;
+    : rather than in RDB infinite recursion thru testing;
+    : for table or list format file;
+    : date: 2020-05-17 users now HANG waiting for input, preferred over run-away;
+    : date: 2020-05-17;
+    : date: 2020-05-18;
+    : date: 2020-11-14;
+    :;
+    [[ -p /dev/stdin ]] && { 
+        cat -;
+        return
+    };
+    read line;
+    [[ -n "$line" ]] && { 
+        echo "$line";
+        cat -;
+        return
+    };
+    : never get here, the above READ hangs;
+    run_with_timeout 5 cat
+}
+rdb_lines () 
+{ 
+    : date: 2019-10-24;
+    : date: 2019-10-25;
+    : date: 2020-11-14;
+    awk -F'\t' '
+    BEGIN { lmax = 64 }
+          {
+            # add a blank at line end, defend against late trim
+            line = $2 " "
+            while (length(line) > lmax) {
+                this = substr(line,1,lmax)
+		line = substr(line,lmax+1)
+		pfrg = index(line," ")
+		if (pfrg) {
+		    # undefended line
+		    this = this substr(line,1,pfrg)
+		    line = substr(line,pfrg+1)
+		}
+                printf "%s\t%s\n", $1, this		
+            }
+	    if (length(line) ) {
+                printf "%s\t%s\n", $1, line
+	    }
+          }
+      '
+}
+report_exceedargcount () 
+{ 
+    : date: 2018-02-16;
+    : date: 2020-03-04;
+    : app_trace $*;
+    : date: 2020-11-14;
+    [[ $1 -gt $2 ]] && { 
+        report_usage need no more than $1 arg/s: ${*:3};
+        return 1
+    }
+}
+run_with_timeout () 
+{ 
+    : supplies FUNCTION timeout with CMD args...;
+    : usage: "run_with_timeout [N {10}] cmd args ...";
+    : ref: https://stackoverflow.com/questions/24412721/elegant-solution-to-implement-timeout-for-bash-commands-and-functions/24413646;
+    : date: 2020-05-17;
+    : date: 2020-11-14;
+    report_notargcount 1 $#;
+    local time=10;
+    isint $1 && { 
+        time=$1;
+        shift
+    };
+    : Run in a subshell to avoid job control messages;
+    ( "$@" & child=$!;
+    : Avoid default notification in non-interactive shell for SIGTERM;
+    trap -- "" SIGTERM;
+    ( sleep $time;
+    kill $child 2> /dev/null ) & wait $child )
+}
+select_first () 
+{ 
+    : select the first occurrence of a fields value;
+    : since "$1" in this context is the argument to this function,;
+    : a column name, and NOT a awk positional paramter. this function;
+    : started life with a "gem" tag, but thought better to call a "lesson"!;
+    : this is the GEM of the DAY;
+    : ref: needs a URL on th shelf w.r.t why such a gem;
+    : date: 2020-05-08;
+    : date: 2020-11-14;
+    report_notpipe && { 
+        cat -;
+        return 1
+    };
+    report_notargcount 1 $# && { 
+        cat -;
+        return 2
+    };
+    row "!selected[$1]++"
+}
+statdirline () 
+{ 
+    : median MTIME file, mtime, nfiles dir;
+    : todo: do NOT stat a directory;
+    : date: 2020-11-12;
+    : date: 2020-11-14;
+    statmtime;
+    table_report > /dev/null 2>&1;
+    set -- $(cat tables.rdb | rowhas table statmtime | column nrecrds  | headoff);
+    cat statmtime.rdb | row "NR == $(expr $1 / 2)" | addcol nfiles dir | compute "dir = \"$PWD\"; nfiles = $1" | tabletolist > .$(myname).lst
+}
+statimes () 
+{ 
+    : date: 2020-11-11;
+    : date: 2020-11-14;
+    [[ -f "$1" ]] || return;
+    printf "\nstatfile\t$1\n";
+    stat -s $1 | tpl | sed "s/=/	/; s/^st_//";
+    echo
+}
+statmtime () 
+{ 
+    : date: 2020-11-11;
+    : date: 2020-11-12;
+    : date: 2020-11-14;
+    foreach statimes $(onlyfiles {a..z}* {A..Z}* {0..9}*) > statimes.lst;
+    l2t statimes.lst;
+    cat statimes.rdb | column statfile mtime | sorttable mtime > $(myname).rdb
+}
+table_list () 
+{ 
+    : list and ADD Tables;
+    : date: 2020-04-12;
+    : date: 2020-11-14;
+    tableorlist *.{rdb,nxt,lst} | tee $(myname).rdb | rowhas Type table | column File | headoff
+}
+table_report () 
+{ 
+    : local tables;
+    : usage: ~ OR, e.g. ~ cat, overrides default JUSTIFY;
+    : RDB_LINES folds Long field lists;
+    : date: 2020-09-30;
+    : date: 2020-11-14;
+    set -- "${@:-justify}" .tmp.{a,b,c}.report;
+    newest tables.rdb *.rdb || { 
+        tables | tee $2 | ncolumn fields > $3;
+        column table fields < $2 | rdb_lines > $4;
+        read_devtty $( wc -l  $3 $2 $4);
+        jointable $3 $4 | sorttable -r modate | select_first table | sorttable > tables.rdb
+    };
+    $1 < tables.rdb;
+    rm -f .tmp.{a,b,c}.report
+}
+tables () 
+{ 
+    : collect args or local tables on STDOUT;
+    : date: 2020-11-14;
+    set -- tables.rdb $(table_list);
+    newest $* || ( tables_columns rdb_hdr;
+    foreach tables_record $* ) > $1;
+    cat $1
+}
+tables_columns () 
+{ 
+    : date: 2020-11-14;
+    ${*:-echo} table nrecrds modate fields
+}
+tables_record () 
+{ 
+    : heavily dependent on STAT -t and format;
+    : date: 2020-11-14;
+    report_notfile $1 && return 1;
+    local records=$(expr $(cat $1 | wc -l) - 2);
+    local fields=$(echo $(sed 1q $1));
+    local modate=$(stat -t %Y-%m-%d $1|field 10);
+    printf "%s\t" $1;
+    printf "%7d\t" $records;
+    printf "%s\t" "${modate//\"/}";
+    printf "%s\n" "$fields"
+}
+tpl () 
+{ 
+    : returns STDIN or NAMEd files as a Token Per Line;
+    : date: 2020-11-14;
+    cat ${*:--} | tr -s ' \t' '\n'
+}
+app_pause () 
+{ 
+    : date: 2020-09-24;
+    trace_sub $@
+}
+_collect_library () 
+{ 
+    local dir=$(dirname $1);
+    local base=$(basename $1);
+    local tolib=$(which $base);
+    read_devtty dir: $dir;
+    read_devtty base: $base;
+    read_devtty tolib: $tolib;
+    cat $1/* > $tolib;
+    lib_tidy $tolib
+}
+fun_libxfer () 
+{ 
+    : move functions from lib to lib;
+    : transfer takes place in f2file copy of fun, to directories;
+    report_notargcount 3 $# From To Function ... && return 2;
+    local from=$1;
+    shift;
+    local to=$1;
+    shift;
+    read_devtty from: $from;
+    read_devtty to: $to;
+    report_notargcount 1 $# From To Function ... && return 1;
+    : ---------------------------- in lieu of declare -f copies --;
+    local from_dir=$(f2file $(which $from));
+    : -------------------------------- verify functions in FROM --;
+    set -- $(indir $from_dir ls $*);
+    report_notargcount 1 $# no more functions to move && return 3;
+    local to_dir=$(f2file $(which $to));
+    read_devtty from, to, funs: $from_dir, $to_dir, $*;
+    : ------------------------------- move functions FROM - -- > TO;
+    read_devtty indir $from_dir mv $* $todir;
+    indir $from_dir mv $* $todir;
+    : -------------------- restore updated function collections --;
+    _collect_library $from_dir;
+    _collect_library $to_dir
 }
 echo trace_init 1>&2

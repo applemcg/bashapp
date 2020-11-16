@@ -78,8 +78,6 @@ graf_tidy ()
 { 
     : clean duplicated functions to use latest definitions;
     : appends any necesary initialization;
-    : uses: fun_starter;
-    : libr: graflib;
     : date: 2020-02-20;
     source $1;
     { 
@@ -93,7 +91,6 @@ graf_tapp ()
 { 
     : write the APP from its APPlib;
     : allows STD, UTIL,and the APP lib;
-    : uses: graf_copy;
     : date: 2020-01-27;
     : app_trace ENTRY $*;
     report_notargcount 1 $# APP or applib && return 1;
@@ -421,7 +418,6 @@ app_funuses ()
 mk_graf_version () 
 { 
     : query the available versions OR define a function returning the value;
-    : libr: graflib;
     case $# in 
         0)
             grep '^## \[' changelog.md | sed 8q

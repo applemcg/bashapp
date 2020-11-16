@@ -31,11 +31,7 @@ backup_allfiles ()
 { 
     : BACKUP every FILE in the directory;
     : BACKUP_NEEDED reduces the list, to only those needed;
-    : used: graf_prep;
     : date: 2019-09-28;
-    : done: rename backup_dir backup_allfiles, then dir_backup to backup_directory;
-    : todo: rename ver_backup to backup_version, and another collisions;
-    : todo: and all users of any changes;
     : date: 2019-12-28;
     function backup_needed () 
     { 

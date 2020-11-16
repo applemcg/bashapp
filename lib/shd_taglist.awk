@@ -24,8 +24,12 @@
 #
 # ---------------------------------------------------------------------	--
 #
-    { tagged = $1 ~ /.*:$/
-      # printf "NR: %d, tagged %d\n", NR, tagged
+    {
+        # set true,false of TAGGED on EVERY liner
+	
+        tagged = $1 ~ /^[a-z][a-z]*:$/ 
+
+        # printf "NR: %d, tagged %d\n", NR, tagged
     }
    
     NR == 1 && ! tagged {

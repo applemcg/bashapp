@@ -26,7 +26,6 @@ shd_assert ()
     : ~ function;
     : returns: candidate comments;
     : turns report_not... into colon-comment for docstring.;
-    : uses: shd_justcolon sed;
     report_notfunction $1 && return 1;
     declare -f ${1:-$(myname)} | sed 's/^\( *\)\(report_not\)/\1: \2/' | shd_justcolon
 }
@@ -59,8 +58,6 @@ shd_clean ()
 shd_collect () 
 { 
     : collect functions, defaulting to SET;
-    : uses: fun_allbody;
-    : libr: stdlib;
     : date: 2020-02-20;
     case $# in 
         0)
@@ -102,7 +99,10 @@ shd_getdate ()
     { 
         case $# in 
             0)
-                set
+                report_notpipe && { 
+                    comment e.g. set ...;
+                    return 1
+                }
             ;;
             *)
                 fun_allbody ${*:--}
@@ -122,7 +122,6 @@ shd_getlibr ()
     : collect date-stamps from functions, by args;
     : date: 2016-10-01;
     : test for file arguments;
-    : libr: stdlib;
     : 0 -- all funtions;
     : N -- library ... function ...;
     : date: 2017-03-11;
@@ -170,8 +169,8 @@ shd_justcolon ()
 }
 shd_latest () 
 { 
+    : retrieve the last date tag in the function argument OR STDIN;
     : date: 2016-10-16;
-    : uses: shd_getdate awk;
     : date: 2018-01-17;
     : date: 2018-02-16;
     shd_getdate $* | awk '
@@ -194,7 +193,6 @@ shd_listformat ()
 shd_longrecord () 
 { 
     : query all non-date tags and date with reason;
-    : sql: row;
     : date: 2020-04-01;
     report_notpipe && return 1;
     listtotable | row '
@@ -268,14 +266,13 @@ shd_oc ()
 }
 shd_one () 
 { 
-    : date 2017-02-09;
     : this is a shell doclib "shdoc" comment;
     : --------------------------------------;
     : an shdoc comment is the first ":"-origin lines;
     : in the shell function, the rest being the executable.;
     : writes a function {name}_doc for function "name";
     : note: "function NAME_doc () {" is a sticky format.;
-    : uses: shd_trim;
+    : date: 2017-02-09;    
     : date: 2018-02-16;
     report_notfunction $1 && return 1;
     printf "function %s_doc () {\n" $1;
@@ -284,23 +281,21 @@ shd_one ()
 }
 shd_setdate () 
 { 
-    : appends date tag to function, avoiding redundancy;
-    : as last line among leading shdoc comments;
-    : -----;
+    : appends date tag to functions shdoc -- this -- block,
+    : returning updated funciton body;
+    : avoiding redundancy, as last line among leading shdoc comments;
     : this uses the local function trick. trailing UNSET;
-    : date: 2016-09-30;
-    : update: change date from comment to shd_ tag;
-    : uses: awk declare foreach fun_allnames uniq;
+    : date: 2016-09-30 changed date from comment to TAG;
     : args: .. function .. library ..;
-    : stdout: function_body ...;
     : date: 2018-01-17;
     : date: 2018-02-16;
     function _dffx () 
-    { 
+    {
+        read_devtty $1
         declare -f $1 | awk -v date=$(date +%F) '
 
         BEGIN       { code = 0 }
-
+        #           { printf "NR: %d, code: %d, line: %s\n", NR, code, $0 > "/dev/stderr" ; }
         NR < 3 || ( \
         NR > 2 && !code && $1 ~ /^:$/ \
 	          ) {
@@ -314,9 +309,8 @@ shd_setdate ()
 
      ' | uniq | tee .$(myname).out
     };
-    : app_trace $*;
+    read_devtty $*;
     foreach _dffx $(fun_allnames ${*:-shd_setdate});
-    unset _dffx
 }
 shd_summary () 
 { 
@@ -336,7 +330,7 @@ shd_taglist ()
     : date: 2020-04-05 quietly ignore non-functions for shd_listformat;
     : date: 2020-08-28;
     isfunction ${1:-/dev/null} || return;
-    printf "\nname\t%s\n" $1;
+    printf "\nfun\t%s\n" $1;
     declare -f $1 | shd_justcolon | sed '
 
         # clean the text upto the tag or shdoc comment
@@ -355,9 +349,8 @@ shd_tagnames ()
 }
 shd_tags () 
 { 
-    : args: function ...;
-    : format: function tag-line;
-    : uses: shd_oc awk;
+    : writes function tag and tagline;
+    : date: 2020-10-02;
     shd_oc ${*:-$(myname)} | awk '
 
         $1 ~ /^function$/ { name = $2; sub(/_doc$/,"",name); }
@@ -516,21 +509,91 @@ shd_tagcolumn ()
 { 
     : extract functions with a tag, the name and the column;
     : update the list of function tags daily;
-    : uses: sfg, short for all functions present;
     : 2020-06-10 test for non-existent or EMPTY file, add SMART cat;
+    : todo: collect and generalize references to shd_alldata.{txt,lst}
     : date: 2020-08-28;
-    function shd_alldata () 
+    : date: 2020-09-28;
+    : date: 2020-10-02;
+    : date: 2020-10-03;
+    function _shd_alldata () 
     { 
         : produces all tagdata, and trims list to datadictionary;
-        foreach shd_taglist ${*:-$(myname))} | tee $(home)/lib/$(myname).txt | field 1 | sort -u
+        foreach shd_taglist $(fun_collection) | tee ./shd_alldata.txt | field 1 | sort -u
     };
-    
-    local datadict=$(home)/lib/$(myname).txt;
-    set -- $(set | functions ) /dev/null
-    [[ -s $datadict ]] ||       shd_alldata $* > $datadict;
-    modified_today $datadict || shd_alldata $*  > $datadict;
+    runfrom $(funlib_rdb) || return;
+    local datadict=$(shd_tagdatadict);
+    [[ -f $datadict ]] || _shd_alldata > $datadict;
+    modified_today $datadict || _shd_alldata > $datadict;
     : accept a column name, or if none, pick from the datadictionary;
+    cat $datadict shd_alldata.txt > shd_alldata.lst
+}
+shd_onetag () 
+{ 
+    : date: 2020-09-28;
+    runfrom $(funlib_rdb) || return;
+    local datadict=shd_tagcolumn.txt;
     set ${1:-$(pick $(< $datadict))};
-    cat $datadict $(home)/lib/shd_alldata.txt | listtotable | column name $1 | row $1
+    cat shd_alldata.lst | column fun $1 | row $1
+}
+fun_collection () 
+{ 
+    : every know function name;
+    : related: f2file shd_tagcolumn lib_{changed,process} .;
+    : date: 2020-10-02;
+    runfrom $(lib)/dir || return;
+    ls */* | awk -F/ '{ print $2 }' | sort -u
+}
+date_firstlast () 
+{ 
+    : save the NAME, FIRST and LAST dates of the records in a LIST format file;
+    : defend against the date having extra information on the record;
+    : date: 2020-10-02;
+    : date: 2020-10-11 -- NAME is now a FUN.;
+    report_notpipe && return 1;
+    awk '
+
+BEGIN       { FS = "\t"
+              fmt = "\nfun\t%s\ncreated\t%s\nlatest\t%s\n"
+	      fmd = "%s\t%s\t"
+	      p   = 0
+	    }
+END         { printf "\n" }
+
+            { if( testing ) {
+
+	        print "DEBUG: " NR ",  " $0
+		printf fmd, "first", first
+	        printf fmd, "p", p
+ 	        printf fmd, "created", created
+	        printf fmd, "latest", latest
+	        printf "\n"
+		}
+	    }
+
+NF < 1 && p   { printf fmt, name, created, latest; p = 0; created = latest = "" }
+
+$1 ~ /^fun$/  { first = 1; name = $2 };
+
+$1 ~ /^date$/ {  p = 1
+                 if( first ) {
+	            first = 0
+		    created = substr($2,1,10)
+                 }		   
+                 latest = substr($2,1,10)
+             }
+'
+}
+shd_tagdatadict () 
+{ 
+    : name of tag_datadictionary. to refresh, rm -f;
+    : date: 2020-10-03;
+    ${*:-echo} $(funlib_rdb)/$(myname).txt
+}
+fun_createdlatest () 
+{ 
+    : function, date created, latest change;
+    : date: 2020-10-15;
+    runfrom $(funlib_rdb) || return;
+    cat shd_alldata.lst | date_firstlast | listtotable | awk NF | sorttable | tee fun_createdlatest.rdb
 }
 echo shd_init 1>&2
