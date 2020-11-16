@@ -1,19 +1,14 @@
-proc_parent_test () 
+_collect_library () 
 { 
-    : test both facets of proc_parent: terminal shell or SCRIPT?;
-    : date: 2020-02-03;
-    set -- ./proc_bash proc_parent;
-    echo FUNCTION $($2);
-    echo =====;
-    printf "#! /usr/bin/env bash\n%s\n%s\n" "$(qf $2)" $2 > $1;
-    chmod +x $1;
-    echo SCRIPT $($1);
-    echo =====;
-    echo the function;
-    qf $(myname) | sed 's/^/    /';
-    echo ----;
-    echo the script:;
-    sed 's/^/    /' $1
+    : collect and update the library for all the functions in the dir/lib/name directory;
+    report_notdirectory $1 && return 1;
+    local base=$(basename $1);
+    read_devtty base: $base;
+    local tolib=$(which $base);
+    report_notfile $tolib && return 2;
+    read_devtty tolib: $tolib;
+    cat $1/* > $tolib;
+    lib_tidy $tolib
 }
 app_isa () 
 { 
@@ -70,68 +65,10 @@ app_isa ()
         ;;
     esac
 }
-f2file () 
+app_pause () 
 { 
-    : copy library Functions inTO separate FILEs,;
-    : in directory named for the library;
-    : date: 2017-07-10;
-    : date: 2020-02-04 save DIRECTORY in home/lib;
-    report_notfile ${1:-MissingFirstArgument} && return 1;
-    set -- $1 $(home)/lib/dir/$(lib_name $1) $(awk_file);
-    read_devtty set: $*;
-    [[ -d $2 ]] && { 
-        rm -fr $2/*
-    };
-    mkdir -p $2;
-    cat $1 | awk -v dir=$2 -v quote="'" -f $3 2> .f2file_$$.err;
-    echo $2
-}
-proc_parent () 
-{ 
-    : which are we running, a terminal shell or a SCRIPT?;
-    : date: 2020-02-03;
-    case $0 in 
-        -bash)
-            echo ${1:-$(myname 2)}
-        ;;
-        *)
-            basename $0
-        ;;
-    esac
-}
-runfrom () 
-{ 
-    : usage: ~ DIRECTORY function args OR return;
-    : date: 2019-09-10;
-    : date: 2020-02-04 simplify, test using indir;
-    : read_devtty ENTERING: $PWD, $*;
-    : date: 2020-09-21;
-    [[ $PWD = $(indir $1 pwd) ]] && return;
-    : read_devtty HUNTING: $PWD, DIR: $1.;
-    ignore pushd $1;
-    shift;
-    local cmd=$(myname 2);
-    read_devtty RUNNING: $PWD, cmd: $cmd, $#: $@;
-    $cmd $@;
-    : read_devtty HAVE RUN: $PWD, $#: $@;
-    ignore popd;
-    : read_devtty POPPED: $PWD, $#: $@;
-    cdx 1>&2;
-    read_devtty CLEARED: $PWD, $#: $@;
-    return 1
-}
-setenv () 
-{ 
-    : ~ NAME value ...;
-    : exports NAME to the environment,;
-    : set to value ...;
-    : date: 2017-08-23;
-    : date: 2018-02-16;
-    [[ $# -lt 1 ]] && return;
-    local na=$1;
-    shift;
-    eval $na=\"$*\";
-    export $na
+    : date: 2020-09-24;
+    trace_sub $@
 }
 app_trace () 
 { 
@@ -146,6 +83,23 @@ app_trace ()
     [[ $cdepth -gt 2 ]] && call_1=${FUNCNAME[2]};
     [[ $cdepth -gt 3 ]] && call_2=${FUNCNAME[3]};
     app_pause "CLEAN ME UP $call_0( $* ) $call_1 $call_2"
+}
+argnumber () 
+{ 
+    : returns argument position of first arg;
+    : ~ match ... ?match ...;
+    : date: 2018-10-29;
+    : date: 2020-11-14;
+    let i=0;
+    for a in ${@:2};
+    do
+        let i=$i+1;
+        [[ $a == $1 ]] && { 
+            echo $i;
+            return
+        };
+    done;
+    echo 0
 }
 args_uniq () 
 { 
@@ -225,6 +179,22 @@ cdx ()
     unset _{cds,esc};
     rm -f $1 $2
 }
+clean () 
+{ 
+    : lists files to CLEAN up, i.e. to RM -fr;
+    : optional args are the command -- $ clean rm -fr;
+    : optional '.toclean' file lists directory-specific files to clean;
+    : optional '.tokeep' file lists directory-specific files to Keep;
+    : date: 2016-12-27 -- add TOKEEP;
+    : date: 2017-07-10 -- added .tmp;
+    : date: 2019-03-12 -- added .acct.*;
+    ${*:-args_uniq} $(
+           : name existing files matching expressions,
+           ls -d *foo .[a-z] .*~ *~ .*lib {,.}*{,.}{err,out,swp,tmp}* .acct.* \#*# $(
+               [[ -f .toclean ]] && cat .toclean
+	   ) 2> /dev/null |  { [[ -f .tokeep ]] && grep -v -f .tokeep || cat; }
+     )
+}
 email_comment () 
 { 
     : date: 2019-04-22;
@@ -238,6 +208,39 @@ epoch ()
     [[ -f $1 ]] || return;
     set $(stat -r $1);
     echo ${10}
+}
+f2file () 
+{ 
+    : copy library Functions inTO separate FILEs,;
+    : in directory named for the library;
+    : date: 2017-07-10;
+    : date: 2020-02-04 save DIRECTORY in home/lib;
+    report_notfile ${1:-MissingFirstArgument} && return 1;
+    set -- $1 $(home)/lib/dir/$(lib_name $1) $(awk_file);
+    read_devtty set: $*;
+    [[ -d $2 ]] && { 
+        rm -fr $2/*
+    };
+    mkdir -p $2;
+    cat $1 | awk -v dir=$2 -v quote="'" -f $3 2> .f2file_$$.err;
+    echo $2
+}
+field () 
+{ 
+    : date: 2017-05-11;
+    : date: 2017-07-18;
+    awk "{ print \$$1 }"
+}
+fields () 
+{ 
+    : -- the first two lines of the table;
+    : TAB separated;
+    : field1 another more ...;
+    : ------ ------- ---- ---;
+    : app_trace $*;
+    : date: 2020-11-14;
+    ( echo $*;
+    echo $* | sed 's/[^ ]/-/g' ) | sed 's/  */	/g'
 }
 file_mode () 
 { 
@@ -316,6 +319,31 @@ fun_deparenify ()
     sed 's/[(]/& /g; s/[)]/ &/g' $*;
     unset fun_olddeparenify
 }
+fun_libxfer () 
+{ 
+    : move functions from lib to lib;
+    : transfer takes place in f2file copy of fun, to directories;
+    report_notargcount 3 $# From To Function ... && return 2;
+    local from=$1;
+    shift;
+    local to=$1;
+    shift;
+    read_devtty from: $from;
+    read_devtty to: $to;
+    report_notargcount 1 $# From To Function ... && return 1;
+    : ---------------------------- in lieu of declare -f copies --;
+    local from_dir=$(f2file $(which $from));
+    : -------------------------------- verify functions in FROM --;
+    set -- $(indir $from_dir ls $*);
+    report_notargcount 1 $# no more functions to move && return 3;
+    : ------------------------------- move functions FROM - -- > TO;
+    local to_dir=$(f2file $(which $to));
+    read_devtty indir $from_dir mv $* $to_dir;
+    indir $from_dir mv $* $to_dir;
+    : -------------------- restore updated function collections --;
+    _collect_library $from_dir;
+    _collect_library $to_dir
+}
 fun_olddeparenify () 
 { 
     : compare and contrast with _subexpr;
@@ -368,6 +396,25 @@ indir ()
     : app_trace $*;
     popd 1>&2 > /dev/null
 }
+isint () 
+{ 
+    : TRUE if first arg IS an INTEGER;
+    : ref: https://stackoverflow.com/questions/24412721/...;
+    : ... elegant-solution-to-implement-timeout-for-bash-commands-and-functions/24413646;
+    : date: 2020-05-17;
+    : date: 2020-11-14;
+    [ "$1" != "" -a "${1//[0-9-]}" = "" ]
+}
+l2t () 
+{ 
+    : copy a LST into a companion RDB;
+    : date: 2020-10-20;
+    : date: 2020-11-14;
+    set -- ${1%.*};
+    set $1.lst $1.rdb;
+    report_notfile $1 && return 1;
+    listtotable < $1 > $2
+}
 lib () 
 { 
     : a big fuss over ALT_HOME not in the ENVIRONMENT;
@@ -375,6 +422,21 @@ lib ()
     : app_trace home: $(home);
     : app_trace ALT_HOME: ${ALT_HOME};
     ${*:-echo} $(home)/lib
+}
+lib_name () 
+{ 
+    : for bin/*lib the basename, for locallib, the dirname;
+    : date: 2020-10-01;
+    report_notfile ${1:-"No File argument"} && return 1;
+    runfrom $(dirname $1) $(basename $1) || return;
+    case $1 in 
+        locallib)
+            echo $(basename $PWD)
+        ;;
+        *)
+            echo $(basename $1)
+        ;;
+    esac
 }
 llrt () 
 { 
@@ -420,6 +482,23 @@ mkdir ()
     command mkdir $1;
     unset _mkdir
 }
+modified_today () 
+{ 
+    : was the FILE argument MODIFIED TODAY?;
+    : date: 2020-01-05;
+    : date: 2020-02-08;
+    function _modified_day () 
+    { 
+        set -- $(stat -t %d $1);
+        : app_trace mtime: ${10};
+        echo ${10:1:2};
+        unset $(myname)
+    };
+    report_notfile ${1:-/dev/null} && return 1;
+    set -- $(_modified_day $1) $(date +%d);
+    : app_trace $*;
+    [[ $1 == $2 ]]
+}
 myname () 
 { 
     : ~ [n];
@@ -436,6 +515,31 @@ needir ()
     report_notargcount 1 $# needed_directory && return 1;
     [[ -d "$1" ]] || mkdir "$1";
     echo "$1"
+}
+newest () 
+{ 
+    : returns TRUE for first - TARGET;
+    : .. newest of remainder - DEPENDENT;
+    : date: 2017-04-16;
+    : date: 2017-07-16;
+    : date: 2020-11-14;
+    local caller=$(myname 2);
+    : app_trace trace $*;
+    [[ -f "$1" ]] || { 
+        comment $caller NO TARGET $1;
+        return 1
+    };
+    local target=$1;
+    shift;
+    while [[ -n "$1" ]]; do
+        [[ "$target" -ot "$1" ]] && { 
+            comment $caller NEWER DEPENDENT $1 than $target;
+            return 1
+        };
+        shift;
+    done;
+    comment $caller NEWEST TARGET $target;
+    return 0
 }
 nf () 
 { 
@@ -491,172 +595,6 @@ paths ()
     : date: 2017-07-16;
     eval echo \$${1:-PATH} | sed 's/::/:.:/' | tr : '\012'
 }
-sfg () 
-{ 
-    : date: 2019-12-21 back to our roots, Set Functions Grep;
-    set | functions | grep "${@:-.}"
-}
-stdin_orargs () 
-{ 
-    : treat STDIN as args, OR echo any args, default to CALLER;
-    : date: 2019-03-24;
-    : date: 2019-11-29;
-    [[ -p /dev/stdin ]] && cat || echo ${*:-$(myname 2)}
-}
-timestamp () 
-{ 
-    : ~ fileA fileB;
-    : stamp B with TIME of A;
-    : date: 2016-10-02;
-    : test for file A existing;
-    : date: 2018-10-09;
-    report_notfile $1 && return 1;
-    : app_trace $*;
-    touch -t $(date -r $(epoch $1)  +%Y%m%d%H%M.%S) $2
-}
-type_word () 
-{ 
-    : date: 2019-11-16;
-    report_notfunction ${1:-/dev/null} && return 1;
-    foreach fun_alltype $(fun_words $*) | nf gt 1
-}
-ver_time () 
-{ 
-    : date: 2017-12-23;
-    set -- $(date +%Y%m_%b/%d_%a/%H%M%S);
-    : app_trace pwd: $PWD, return: $1;
-    echo $1
-}
-wpl () 
-{ 
-    report_notpipe && return 1;
-    tr -cs 'A-Za-z0-9_' '\n'
-}
-trace_call () 
-{ 
-    : obsolescent, retiring in behalf of app_trace;
-    : date: 2017-07-18;
-    : date: 2018-02-16;
-    : date: 2020-04-23;
-    trace_stderr "$@"
-}
-trace_stderr () 
-{ 
-    : date: 2018-02-16;
-    : date: 2020-04-23;
-    pa=${FUNCNAME[2]:-COMMANDLINE};
-    gr=${FUNCNAME[3]:-COMMANDLINE};
-    printf "TRACE %s\t@ %s\t%d  ( %s )\n" "$gr" "$pa" $# "$*" 1>&2
-}
-trace_sub () 
-{ 
-    : cloned from TRACE_STDERR, to accomodate pause_on, off;
-    : also note, stack is one deeper than _STDERR;
-    : todo: finds a way to unite these two off-by-one instances.;
-    : date: 2018-02-16;
-    : date: 2020-04-23;
-    pa=${FUNCNAME[3]:-COMMANDLINE};
-    gr=${FUNCNAME[4]:-COMMANDLINE};
-    printf "%s\n" "$*" 1>&2
-}
-trace_app () 
-{ 
-    : tracing, debugging to make an APP;
-    : multi-arg eg -- trace_app foreach do_whf;
-    : OR trace_app declare -f;
-    : date: 2020-04-25;
-    ${*:-echo} trace_{call,stderr,sub,app} app_{trace,pause} pause_{on,off}
-}
-trace_help () 
-{ 
-    : date: 2020-09-24;
-    echo trace functions:;
-    sfg trace_ | sed 's/^/  /'
-}
-trace_init () 
-{ 
-    : default is trace_off, alternative trace_on;
-    : date: 2020-09-24;
-    trace_off
-}
-trace_off () 
-{ 
-    : date: 2019-09-15;
-    : date: 2020-06-20;
-    : date: 2020-09-24;
-    eval "read_devtty () { return; }";
-    eval "app_trace  () { return; }";
-    eval "trace_toggle () { trace_on; }";
-    declare -f trace_toggle 1>&2
-}
-trace_on () 
-{ 
-    : the READ syntax, for the moment, limits to ONE arg.;
-    : date: 2019-09-15;
-    : date: 2020-06-20;
-    : date: 2020-09-24 added APP_TRACE,;
-    : todo: collapse calls to app_trace, read_devtty. one to the other;
-    : date: 2020-09-24;
-    eval "read_devtty () { read -p \"\$(myname 2): ( \$* ) RETURN? \" < /dev/tty; }";
-    eval "app_trace ()   { read -p \"\$(myname 2): ( \$* ) RETURN? \" < /dev/tty; }";
-    eval "trace_toggle () { trace_off; }";
-    declare -f trace_toggle 1>&2
-}
-trace_simple () 
-{ 
-    : ~ arg ...;
-    : prints Calling Function and passed arguments to STDERR;
-    : date: 2020-09-24;
-    pa=${FUNCNAME[1]:-COMMANDLINE};
-    printf "TRACE %s\t%s\n" "$pa" "$*" 1>&2
-}
-trace_test () 
-{ 
-    : date: 2020-09-24;
-    trace_toggle;
-    declare -f read_devtty;
-    trace_toggle;
-    declare -f read_devtty
-}
-clean () 
-{ 
-    : lists files to CLEAN up, i.e. to RM -fr;
-    : optional args are the command -- $ clean rm -fr;
-    : optional '.toclean' file lists directory-specific files to clean;
-    : optional '.tokeep' file lists directory-specific files to Keep;
-    : date: 2016-12-27 -- add TOKEEP;
-    : date: 2017-07-10 -- added .tmp;
-    : date: 2019-03-12 -- added .acct.*;
-    ${*:-args_uniq} $(
-           : name existing files matching expressions,
-           ls -d *foo .[a-z] .*~ *~ .*lib {,.}*{,.}{err,out,swp,tmp}* .acct.* \#*# $(
-               [[ -f .toclean ]] && cat .toclean
-	   ) 2> /dev/null |  { [[ -f .tokeep ]] && grep -v -f .tokeep || cat; }
-     )
-}
-field () 
-{ 
-    : date: 2017-05-11;
-    : date: 2017-07-18;
-    awk "{ print \$$1 }"
-}
-modified_today () 
-{ 
-    : was the FILE argument MODIFIED TODAY?;
-    : date: 2020-01-05;
-    : date: 2020-02-08;
-    function _modified_day () 
-    { 
-        set -- $(stat -t %d $1);
-        : app_trace mtime: ${10};
-        echo ${10:1:2};
-        unset $(myname)
-    };
-    report_notfile ${1:-/dev/null} && return 1;
-    set -- $(_modified_day $1) $(date +%d);
-    : app_trace $*;
-    [[ $1 == $2 ]]
-}
 pick () 
 { 
     : ~ arg ...;
@@ -689,163 +627,35 @@ pick ()
         esac;
     done
 }
-swhich () 
+proc_parent () 
 { 
-    : find a function lib, first by WHICH, and not found in NAME_LIBRAY;
-    : an example of recursive decision;
-    : by arg count;
-    : 0 -- report;
-    : 1 -- try WHICH;
-    : 2 -- 2nd = swhich, an empty result from last call;
-    : 2 -- 2nd = /dev/null, an empty result from WHICH, try NAME_LIBRARY;
-    : 2 or 3 -- 2nd = file, its the function lib;
-    : date: 2020-10-01;
-    : date: 2020-10-02;
-    :;
-    read_devtty IN: $#, $*;
-    case $#.$2.$3 in 
-        0.*.*)
-            report_notargcount 1 $#;
-            return 1
-        ;;
-        1.*.*)
-            swhich $1 $(which $1) /dev/null;
-            return
-        ;;
-        2.swhich.*)
-            comment NO which or entry in NAME_LIBRARY;
-            return 1
-        ;;
-        2./dev/null.*)
-            swhich $1 $(rowhas name $1 < $(home)/lib/name_library.rdb | column library | headoff) swhich;
-            return
-        ;;
-        2.*.* | 3.*./dev/null | 3.*.swhich)
-            [[ -f $2 ]] && { 
-                echo $2;
-                return
-            }
-        ;;
-        *.*)
-            comment too many swhichs for $1: ${*:2};
-            return 1
-        ;;
-    esac;
-    comment NO which or entry in NAME_LIBRARY;
-    return 1
-}
-swhich_run () 
-{ 
-    : date: 2020-09-30;
-    printf "\n\n%s\t%s\n" swhich "<$1>";
-    swhich $1 | fourspaces
-}
-swhich_test () 
-{ 
-    : run which, name library, Ambiguous name, non-existant, and EMPTY;
-    : date: 2020-09-30;
-    foreach swhich_run functionlib chap04 chap foo ""
-}
-lib_name () 
-{ 
-    : for bin/*lib the basename, for locallib, the dirname;
-    : date: 2020-10-01;
-    report_notfile ${1:-"No File argument"} && return 1;
-    runfrom $(dirname $1) $(basename $1) || return;
-    case $1 in 
-        locallib)
-            echo $(basename $PWD)
+    : which are we running, a terminal shell or a SCRIPT?;
+    : date: 2020-02-03;
+    case $0 in 
+        -bash)
+            echo ${1:-$(myname 2)}
         ;;
         *)
-            echo $(basename $1)
+            basename $0
         ;;
     esac
 }
-table_me () 
+proc_parent_test () 
 { 
-    : the first argument writes its named table sorted;
-    : date: 2020-10-02;
-    report_notfunction $1 && return 1;
-    $1 | sorttable > $1.rdb;
-    echo $1.rdb
-}
-tag_count () 
-{ 
-    : date: 2020-10-02;
-    rdb_hdr tag count;
-    field 1 < shd_alldata.txt | sort | uniq -c | awk 'NF > 1 { printf "%s\t%6d\n", $2, $1 }'
-}
-argnumber () 
-{ 
-    : returns argument position of first arg;
-    : ~ match ... ?match ...;
-    : date: 2018-10-29;
-    : date: 2020-11-14;
-    let i=0;
-    for a in ${@:2};
-    do
-        let i=$i+1;
-        [[ $a == $1 ]] && { 
-            echo $i;
-            return
-        };
-    done;
-    echo 0
-}
-fields () 
-{ 
-    : -- the first two lines of the table;
-    : TAB separated;
-    : field1 another more ...;
-    : ------ ------- ---- ---;
-    : app_trace $*;
-    : date: 2020-11-14;
-    ( echo $*;
-    echo $* | sed 's/[^ ]/-/g' ) | sed 's/  */	/g'
-}
-isint () 
-{ 
-    : TRUE if first arg IS an INTEGER;
-    : ref: https://stackoverflow.com/questions/24412721/...;
-    : ... elegant-solution-to-implement-timeout-for-bash-commands-and-functions/24413646;
-    : date: 2020-05-17;
-    : date: 2020-11-14;
-    [ "$1" != "" -a "${1//[0-9-]}" = "" ]
-}
-l2t () 
-{ 
-    : copy a LST into a companion RDB;
-    : date: 2020-10-20;
-    : date: 2020-11-14;
-    set -- ${1%.*};
-    set $1.lst $1.rdb;
-    report_notfile $1 && return 1;
-    listtotable < $1 > $2
-}
-newest () 
-{ 
-    : returns TRUE for first - TARGET;
-    : .. newest of remainder - DEPENDENT;
-    : date: 2017-04-16;
-    : date: 2017-07-16;
-    : date: 2020-11-14;
-    local caller=$(myname 2);
-    : app_trace trace $*;
-    [[ -f "$1" ]] || { 
-        comment $caller NO TARGET $1;
-        return 1
-    };
-    local target=$1;
-    shift;
-    while [[ -n "$1" ]]; do
-        [[ "$target" -ot "$1" ]] && { 
-            comment $caller NEWER DEPENDENT $1 than $target;
-            return 1
-        };
-        shift;
-    done;
-    comment $caller NEWEST TARGET $target;
-    return 0
+    : test both facets of proc_parent: terminal shell or SCRIPT?;
+    : date: 2020-02-03;
+    set -- ./proc_bash proc_parent;
+    echo FUNCTION $($2);
+    echo =====;
+    printf "#! /usr/bin/env bash\n%s\n%s\n" "$(qf $2)" $2 > $1;
+    chmod +x $1;
+    echo SCRIPT $($1);
+    echo =====;
+    echo the function;
+    qf $(myname) | sed 's/^/    /';
+    echo ----;
+    echo the script:;
+    sed 's/^/    /' $1
 }
 rcat () 
 { 
@@ -928,6 +738,27 @@ run_with_timeout ()
     ( sleep $time;
     kill $child 2> /dev/null ) & wait $child )
 }
+runfrom () 
+{ 
+    : usage: ~ DIRECTORY function args OR return;
+    : date: 2019-09-10;
+    : date: 2020-02-04 simplify, test using indir;
+    : read_devtty ENTERING: $PWD, $*;
+    : date: 2020-09-21;
+    [[ $PWD = $(indir $1 pwd) ]] && return;
+    : read_devtty HUNTING: $PWD, DIR: $1.;
+    ignore pushd $1;
+    shift;
+    local cmd=$(myname 2);
+    read_devtty RUNNING: $PWD, cmd: $cmd, $#: $@;
+    $cmd $@;
+    : read_devtty HAVE RUN: $PWD, $#: $@;
+    ignore popd;
+    : read_devtty POPPED: $PWD, $#: $@;
+    cdx 1>&2;
+    read_devtty CLEARED: $PWD, $#: $@;
+    return 1
+}
 select_first () 
 { 
     : select the first occurrence of a fields value;
@@ -948,34 +779,87 @@ select_first ()
     };
     row "!selected[$1]++"
 }
-statdirline () 
+setenv () 
 { 
-    : median MTIME file, mtime, nfiles dir;
-    : todo: do NOT stat a directory;
-    : date: 2020-11-12;
-    : date: 2020-11-14;
-    statmtime;
-    table_report > /dev/null 2>&1;
-    set -- $(cat tables.rdb | rowhas table statmtime | column nrecrds  | headoff);
-    cat statmtime.rdb | row "NR == $(expr $1 / 2)" | addcol nfiles dir | compute "dir = \"$PWD\"; nfiles = $1" | tabletolist > .$(myname).lst
+    : ~ NAME value ...;
+    : exports NAME to the environment,;
+    : set to value ...;
+    : date: 2017-08-23;
+    : date: 2018-02-16;
+    [[ $# -lt 1 ]] && return;
+    local na=$1;
+    shift;
+    eval $na=\"$*\";
+    export $na
 }
-statimes () 
+sfg () 
 { 
-    : date: 2020-11-11;
-    : date: 2020-11-14;
-    [[ -f "$1" ]] || return;
-    printf "\nstatfile\t$1\n";
-    stat -s $1 | tpl | sed "s/=/	/; s/^st_//";
-    echo
+    : date: 2019-12-21 back to our roots, Set Functions Grep;
+    set | functions | grep "${@:-.}"
 }
-statmtime () 
+stdin_orargs () 
 { 
-    : date: 2020-11-11;
-    : date: 2020-11-12;
-    : date: 2020-11-14;
-    foreach statimes $(onlyfiles {a..z}* {A..Z}* {0..9}*) > statimes.lst;
-    l2t statimes.lst;
-    cat statimes.rdb | column statfile mtime | sorttable mtime > $(myname).rdb
+    : treat STDIN as args, OR echo any args, default to CALLER;
+    : date: 2019-03-24;
+    : date: 2019-11-29;
+    [[ -p /dev/stdin ]] && cat || echo ${*:-$(myname 2)}
+}
+swhich () 
+{ 
+    : find a function lib, first by WHICH, and not found in NAME_LIBRAY;
+    : an example of recursive decision;
+    : by arg count;
+    : 0 -- report;
+    : 1 -- try WHICH;
+    : 2 -- 2nd = swhich, an empty result from last call;
+    : 2 -- 2nd = /dev/null, an empty result from WHICH, try NAME_LIBRARY;
+    : 2 or 3 -- 2nd = file, its the function lib;
+    : date: 2020-10-01;
+    : date: 2020-10-02;
+    :;
+    read_devtty IN: $#, $*;
+    case $#.$2.$3 in 
+        0.*.*)
+            report_notargcount 1 $#;
+            return 1
+        ;;
+        1.*.*)
+            swhich $1 $(which $1) /dev/null;
+            return
+        ;;
+        2.swhich.*)
+            comment NO which or entry in NAME_LIBRARY;
+            return 1
+        ;;
+        2./dev/null.*)
+            swhich $1 $(rowhas name $1 < $(home)/lib/name_library.rdb | column library | headoff) swhich;
+            return
+        ;;
+        2.*.* | 3.*./dev/null | 3.*.swhich)
+            [[ -f $2 ]] && { 
+                echo $2;
+                return
+            }
+        ;;
+        *.*)
+            comment too many swhichs for $1: ${*:2};
+            return 1
+        ;;
+    esac;
+    comment NO which or entry in NAME_LIBRARY;
+    return 1
+}
+swhich_run () 
+{ 
+    : date: 2020-09-30;
+    printf "\n\n%s\t%s\n" swhich "<$1>";
+    swhich $1 | fourspaces
+}
+swhich_test () 
+{ 
+    : run which, name library, Ambiguous name, non-existant, and EMPTY;
+    : date: 2020-09-30;
+    foreach swhich_run functionlib chap04 chap foo ""
 }
 table_list () 
 { 
@@ -983,6 +867,14 @@ table_list ()
     : date: 2020-04-12;
     : date: 2020-11-14;
     tableorlist *.{rdb,nxt,lst} | tee $(myname).rdb | rowhas Type table | column File | headoff
+}
+table_me () 
+{ 
+    : the first argument writes its named table sorted;
+    : date: 2020-10-02;
+    report_notfunction $1 && return 1;
+    $1 | sorttable > $1.rdb;
+    echo $1.rdb
 }
 table_report () 
 { 
@@ -1028,52 +920,131 @@ tables_record ()
     printf "%s\t" "${modate//\"/}";
     printf "%s\n" "$fields"
 }
+tag_count () 
+{ 
+    : date: 2020-10-02;
+    rdb_hdr tag count;
+    field 1 < shd_alldata.txt | sort | uniq -c | awk 'NF > 1 { printf "%s\t%6d\n", $2, $1 }'
+}
+timestamp () 
+{ 
+    : ~ fileA fileB;
+    : stamp B with TIME of A;
+    : date: 2016-10-02;
+    : test for file A existing;
+    : date: 2018-10-09;
+    report_notfile $1 && return 1;
+    : app_trace $*;
+    touch -t $(date -r $(epoch $1)  +%Y%m%d%H%M.%S) $2
+}
 tpl () 
 { 
     : returns STDIN or NAMEd files as a Token Per Line;
     : date: 2020-11-14;
     cat ${*:--} | tr -s ' \t' '\n'
 }
-app_pause () 
+trace_app () 
+{ 
+    : tracing, debugging to make an APP;
+    : multi-arg eg -- trace_app foreach do_whf;
+    : OR trace_app declare -f;
+    : date: 2020-04-25;
+    ${*:-echo} trace_{call,stderr,sub,app} app_{trace,pause} pause_{on,off}
+}
+trace_call () 
+{ 
+    : obsolescent, retiring in behalf of app_trace;
+    : date: 2017-07-18;
+    : date: 2018-02-16;
+    : date: 2020-04-23;
+    trace_stderr "$@"
+}
+trace_help () 
 { 
     : date: 2020-09-24;
-    trace_sub $@
+    echo trace functions:;
+    sfg trace_ | sed 's/^/  /'
 }
-_collect_library () 
+trace_init () 
 { 
-    local dir=$(dirname $1);
-    local base=$(basename $1);
-    local tolib=$(which $base);
-    read_devtty dir: $dir;
-    read_devtty base: $base;
-    read_devtty tolib: $tolib;
-    cat $1/* > $tolib;
-    lib_tidy $tolib
+    : default is trace_off, alternative trace_on;
+    : date: 2020-09-24;
+    trace_off
 }
-fun_libxfer () 
+trace_off () 
 { 
-    : move functions from lib to lib;
-    : transfer takes place in f2file copy of fun, to directories;
-    report_notargcount 3 $# From To Function ... && return 2;
-    local from=$1;
-    shift;
-    local to=$1;
-    shift;
-    read_devtty from: $from;
-    read_devtty to: $to;
-    report_notargcount 1 $# From To Function ... && return 1;
-    : ---------------------------- in lieu of declare -f copies --;
-    local from_dir=$(f2file $(which $from));
-    : -------------------------------- verify functions in FROM --;
-    set -- $(indir $from_dir ls $*);
-    report_notargcount 1 $# no more functions to move && return 3;
-    local to_dir=$(f2file $(which $to));
-    read_devtty from, to, funs: $from_dir, $to_dir, $*;
-    : ------------------------------- move functions FROM - -- > TO;
-    read_devtty indir $from_dir mv $* $todir;
-    indir $from_dir mv $* $todir;
-    : -------------------- restore updated function collections --;
-    _collect_library $from_dir;
-    _collect_library $to_dir
+    : date: 2019-09-15;
+    : date: 2020-06-20;
+    : date: 2020-09-24;
+    eval "read_devtty () { return; }";
+    eval "app_trace  () { return; }";
+    eval "trace_toggle () { trace_on; }";
+    declare -f trace_toggle 1>&2
+}
+trace_on () 
+{ 
+    : the READ syntax, for the moment, limits to ONE arg.;
+    : date: 2019-09-15;
+    : date: 2020-06-20;
+    : date: 2020-09-24 added APP_TRACE,;
+    : todo: collapse calls to app_trace, read_devtty. one to the other;
+    : date: 2020-09-24;
+    eval "read_devtty () { read -p \"\$(myname 2): ( \$* ) RETURN? \" < /dev/tty; }";
+    eval "app_trace ()   { read -p \"\$(myname 2): ( \$* ) RETURN? \" < /dev/tty; }";
+    eval "trace_toggle () { trace_off; }";
+    declare -f trace_toggle 1>&2
+}
+trace_simple () 
+{ 
+    : ~ arg ...;
+    : prints Calling Function and passed arguments to STDERR;
+    : date: 2020-09-24;
+    pa=${FUNCNAME[1]:-COMMANDLINE};
+    printf "TRACE %s\t%s\n" "$pa" "$*" 1>&2
+}
+trace_stderr () 
+{ 
+    : date: 2018-02-16;
+    : date: 2020-04-23;
+    pa=${FUNCNAME[2]:-COMMANDLINE};
+    gr=${FUNCNAME[3]:-COMMANDLINE};
+    printf "TRACE %s\t@ %s\t%d  ( %s )\n" "$gr" "$pa" $# "$*" 1>&2
+}
+trace_sub () 
+{ 
+    : cloned from TRACE_STDERR, to accomodate pause_on, off;
+    : also note, stack is one deeper than _STDERR;
+    : todo: finds a way to unite these two off-by-one instances.;
+    : date: 2018-02-16;
+    : date: 2020-04-23;
+    pa=${FUNCNAME[3]:-COMMANDLINE};
+    gr=${FUNCNAME[4]:-COMMANDLINE};
+    printf "%s\n" "$*" 1>&2
+}
+trace_test () 
+{ 
+    : date: 2020-09-24;
+    trace_toggle;
+    declare -f read_devtty;
+    trace_toggle;
+    declare -f read_devtty
+}
+type_word () 
+{ 
+    : date: 2019-11-16;
+    report_notfunction ${1:-/dev/null} && return 1;
+    foreach fun_alltype $(fun_words $*) | nf gt 1
+}
+ver_time () 
+{ 
+    : date: 2017-12-23;
+    set -- $(date +%Y%m_%b/%d_%a/%H%M%S);
+    : app_trace pwd: $PWD, return: $1;
+    echo $1
+}
+wpl () 
+{ 
+    report_notpipe && return 1;
+    tr -cs 'A-Za-z0-9_' '\n'
 }
 echo trace_init 1>&2
