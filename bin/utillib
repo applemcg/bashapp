@@ -79,7 +79,7 @@ f2file ()
     : date: 2017-07-10;
     : date: 2020-02-04 save DIRECTORY in home/lib;
     report_notfile ${1:-MissingFirstArgument} && return 1;
-    set -- $1 $(home)/lib/$(basename $1).d $(awk_file);
+    set -- $1 $(home)/lib/dir/$(basename $1) $(awk_file);
     : app_trace $*;
     if [ -d $2 ]; then
         rm -f $2/*;
@@ -108,19 +108,20 @@ runfrom ()
     : usage: ~ DIRECTORY function args OR return;
     : date: 2019-09-10;
     : date: 2020-02-04 simplify, test using indir;
-    : app_trace ENTERING: $PWD, $*;
+    : read_devtty ENTERING: $PWD, $*;
+    : date: 2020-09-21;
     [[ $PWD = $(indir $1 pwd) ]] && return;
-    : app_trace HUNTING: $PWD, DIR: $1.;
+    : read_devtty HUNTING: $PWD, DIR: $1.;
     ignore pushd $1;
     shift;
     local cmd=$(myname 2);
-    : app_trace RUNNING: $PWD, cmd: $cmd, $#: $@;
+    : read_devtty RUNNING: $PWD, cmd: $cmd, $#: $@;
     $cmd $@;
-    : app_trace HAVE RUN: $PWD, $#: $@;
+    : read_devtty HAVE RUN: $PWD, $#: $@;
     ignore popd;
-    : app_trace POPPED: $PWD, $#: $@;
+    : read_devtty POPPED: $PWD, $#: $@;
     cdx 1>&2;
-    : dapp_trace CLEARED: $PWD, $#: $@;
+    : read_devtty CLEARED: $PWD, $#: $@;
     return 1
 }
 setenv () 
@@ -135,10 +136,6 @@ setenv ()
     shift;
     eval $na=\"$*\";
     export $na
-}
-app_pause () 
-{ 
-    trace_sub $@
 }
 app_trace () 
 { 
@@ -333,13 +330,9 @@ fun_starter ()
 { 
     : generate STDERR-directed function calls to any_INIT functions;
     : date: 2018-02-16;
-    : date: 2020-03-23 use the INIT functions on all but FUNCIONLIB;
-    : todo: MOP this up;
+    : date: 2020-83-21 ONLY echo the INIT functions on ALL;
     report_notfile $1 && return 1;
-    local cmmd="";
-    [[ $1 == functionlib ]] && { 
-        cmmd="echo"
-    };
+    local cmmd="echo";
     for fun in $(functions $1 | grep _init$ | sort);
     do
         printf "%s %s 1>&2\n" $cmmd $fun;
@@ -350,17 +343,6 @@ fun_words ()
     : date: 2019-09-04;
     : date: 2019-09-20;
     declare -f $* | grep -v '^ *: ' | fun_deparenify | tr -s ' \t' '\n' | grep '^[a-zA-Z0-9_]' | sed 's/;$//' | sort -u
-}
-functions () 
-{ 
-    : date: 2017-05-29;
-    : date: 2017-08-10;
-    awk '
-         $2 ~ /^[(][)]$/           && \
-       ( NF == 2 || $3 ~ /^[{]$/ ) && \
-       !printed[$1]++             { print $1 }
-
-    ' ${*:--}
 }
 home () 
 { 
@@ -570,40 +552,6 @@ trace_stderr ()
     gr=${FUNCNAME[3]:-COMMANDLINE};
     printf "TRACE %s\t@ %s\t%d  ( %s )\n" "$gr" "$pa" $# "$*" 1>&2
 }
-pause_on () 
-{ 
-    : set APP_PAUSE to read with Pause;
-    : date: 2019-09-15;
-    : date: 2020-04-23;
-    eval "app_pause () { : pause execution, displaying the arguments; read -p \"\$@ RETURN?        :\" < /dev/tty >/dev/tty; }"
-}
-pause_off () 
-{ 
-    : set APP_PAUSE to STDERR;
-    : date: 2019-09-15;
-    : date: 2020-04-23;
-    eval "app_pause () { trace_sub \$@; }"
-}
-pause_test () 
-{ 
-    : date: 2020-04-23;
-    function pause_deptha () 
-    { 
-        pause_on;
-        app_trace ON? $1;
-        shift;
-        pause_off;
-        app_trace OFF? $*
-    };
-    set -- One Two Three Four 5 6;
-    pause_on;
-    app_trace ON? $1;
-    shift;
-    pause_off;
-    app_trace OFF? $*;
-    pause_deptha ${*:3};
-    declare -f app_pause pause_{on,off}
-}
 trace_sub () 
 { 
     : cloned from TRACE_STDERR, to accomodate pause_on, off;
@@ -623,3 +571,71 @@ trace_app ()
     : date: 2020-04-25;
     ${*:-echo} trace_{call,stderr,sub,app} app_{trace,pause} pause_{on,off}
 }
+trace_help () 
+{ 
+    : date: 2020-09-24;
+    echo trace functions:;
+    sfg trace_ | sed 's/^/  /'
+}
+trace_init () 
+{ 
+    : default is trace_off, alternative trace_on;
+    : date: 2020-09-24;
+    trace_off
+}
+trace_off () 
+{ 
+    : date: 2019-09-15;
+    : date: 2020-06-20;
+    : date: 2020-09-24;
+    eval "read_devtty () { return; }";
+    eval "app_trace  () { return; }";
+    eval "trace_toggle () { trace_on; }";
+    declare -f trace_toggle 1>&2
+}
+trace_on () 
+{ 
+    : the READ syntax, for the moment, limits to ONE arg.;
+    : date: 2019-09-15;
+    : date: 2020-06-20;
+    : date: 2020-09-24 added APP_TRACE,;
+    : todo: collapse calls to app_trace, read_devtty. one to the other;
+    : date: 2020-09-24;
+    eval "read_devtty () { read -p \"\$(myname 2): ( \$* ) RETURN? \" < /dev/tty; }";
+    eval "app_trace ()   { read -p \"\$(myname 2): ( \$* ) RETURN? \" < /dev/tty; }";
+    eval "trace_toggle () { trace_off; }";
+    declare -f trace_toggle 1>&2
+}
+trace_simple () 
+{ 
+    : ~ arg ...;
+    : prints Calling Function and passed arguments to STDERR;
+    : date: 2020-09-24;
+    pa=${FUNCNAME[1]:-COMMANDLINE};
+    printf "TRACE %s\t%s\n" "$pa" "$*" 1>&2
+}
+trace_test () 
+{ 
+    : date: 2020-09-24;
+    trace_toggle;
+    declare -f read_devtty;
+    trace_toggle;
+    declare -f read_devtty
+}
+rdu_abstract () 
+{ 
+    : function one-line abstracts;
+    : date: 2020-09-24;
+    rdb_hdr name abstract;
+    foreach shd_abstract ${*:-shd_abstract} | nf gt 1
+}
+rdu_libtable () 
+{ 
+    : utility library home table report;
+    : date: 2020-09-24;
+    report_notfile $1 && return 1;
+    set $1 ${1%.*};
+    ( rdb_hdr name library table;
+    do_whf $(column name < $1 | headoff ) ) | compute " table = \"$2\""
+}
+echo trace_init 1>&2

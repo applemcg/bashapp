@@ -159,6 +159,7 @@ shd_init ()
 shd_justcolon () 
 { 
     : returns leading colon-comments from a SINGLE function;
+    : date: 2020-08-28;
     report_notpipe && return 1;
     awk '
     NR > 2 {
@@ -332,8 +333,9 @@ shd_taglist ()
     : todo separatate date, fix into table;
     : date: 2020-03-01;
     : date: 2020-03-30;
-    : date: 2020-04-05 quietly ignore non-functions for shd_listformat
-    isfunction ${1:-/dev/null} || return
+    : date: 2020-04-05 quietly ignore non-functions for shd_listformat;
+    : date: 2020-08-28;
+    isfunction ${1:-/dev/null} || return;
     printf "\nname\t%s\n" $1;
     declare -f $1 | shd_justcolon | sed '
 
@@ -417,7 +419,7 @@ shdoc ()
     : this is a shell doclib "shdoc" comment;
     : an shdoc comment is the first ":"-origin lines;
     : in the shell function, the rest being the executable.;
-    : date: 2018-02-16;    
+    : date: 2018-02-16;
     : date: 2019-01-28 use local _shdoc and produce declare -f format;
     function _shdoc () 
     { 
@@ -426,10 +428,9 @@ shdoc ()
         declare -f $1 | shd_justcolon;
         echo "}"
     };
-    foreach _shdoc ${*:-$(myname)}
+    foreach _shdoc ${*:-$(myname)};
     unset _shdoc
 }
-
 shd_allftags () 
 { 
     : for all functions. collect and distribute the tags;
@@ -440,6 +441,7 @@ shd_allftags ()
 shd_distribute () 
 { 
     : distribute the fields to their tables;
+    : todo: fix the seqn, co-ordinate with shd_taglist.awk;
     : date: 2020-03-29;
     : date: 2020-04-12;
     report_notpipe && return 1;
@@ -452,16 +454,12 @@ shd_distribute ()
         $1 ~ /abstrt/ { funs( $0);            next }
 
                         # separate record for each seqn, shdoc
+
         $1 ~ /seqn/   { shdc( sprintf("name\t%s\n%s", name, $0)); next }
         $1 ~ /shdoc/  { shdc( $0 "\n");       next }
 
                       { funs( $0) }
     '
-}
-shd_help () 
-{ 
-    : date: 2020-04-12;
-    qf test_sequence
 }
 shd_tagdata () 
 { 
@@ -508,3 +506,31 @@ shd_tagdata ()
        }
        '
 }
+shd_toplist () 
+{ 
+    : important shd_ functions, most?;
+    : date: 2020-08-28;
+    ${*:-echo} shd_{taglist,justcolon,toplist,tagcolumn}
+}
+shd_tagcolumn () 
+{ 
+    : extract functions with a tag, the name and the column;
+    : update the list of function tags daily;
+    : uses: sfg, short for all functions present;
+    : 2020-06-10 test for non-existent or EMPTY file, add SMART cat;
+    : date: 2020-08-28;
+    function shd_alldata () 
+    { 
+        : produces all tagdata, and trims list to datadictionary;
+        foreach shd_taglist ${*:-$(myname))} | tee $(home)/lib/$(myname).txt | field 1 | sort -u
+    };
+    
+    local datadict=$(home)/lib/$(myname).txt;
+    set -- $(set | functions ) /dev/null
+    [[ -s $datadict ]] ||       shd_alldata $* > $datadict;
+    modified_today $datadict || shd_alldata $*  > $datadict;
+    : accept a column name, or if none, pick from the datadictionary;
+    set ${1:-$(pick $(< $datadict))};
+    cat $datadict $(home)/lib/shd_alldata.txt | listtotable | column name $1 | row $1
+}
+echo shd_init 1>&2

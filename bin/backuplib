@@ -2,7 +2,7 @@ backup_copyright ()
 { 
     : date: 2019-04-22;
     : date: 2020-03-22;
-cat <<EOF
+    cat <<EOF
 
 Copyright (c) 2005-2020 Marty McGowan, JYATL - Just Yet Another Testing Lab
 
@@ -25,6 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 EOF
+
 }
 backup_allfiles () 
 { 
@@ -51,10 +52,10 @@ backup_depth ()
     : return the number of the deepest backup directory;
     : date 2017-03-05;
     : date: 2019-12-28;
-    backup_directories
+    backup_directories;
     find $BACKUP_DIRECTORY | max_depth
 }
-backup_directories ()
+backup_directories () 
 { 
     : default BACKUP is .bak ... directory;
     : default VERSION is .ver directory;
@@ -73,20 +74,20 @@ backup_directories ()
         ;;
     esac;
     setenv BACKUP_DIRECTORY $1 > /dev/null;
-    setenv VERSION_DIRECTORY $2 > /dev/null;
+    setenv VERSION_DIRECTORY $2 > /dev/null
 }
 backup_files () 
 { 
     : return the names of the local files with a backup copy;
     : date: 2019-12-18;
     : date: 2019-12-28;
-    backup_directories
+    backup_directories;
     indir $BACKUP_DIRECTORY onlyfiles
 }
 backup_main () 
 { 
     : ~ backup file ...;
-    backup_directories
+    backup_directories;
     function backup_here () 
     { 
         : recursively backup a changed file in the backup tree;
@@ -139,7 +140,8 @@ backup_sync ()
 { 
     : pushes files no-longer backed up one level down the backup tree.;
     : date: 2019-12-28;
-    backup_directories
+    : date: 2020-09-23;
+    backup_directories;
     function backup_outdated () 
     { 
         : lists backup_files no longer in current directory;
@@ -162,7 +164,7 @@ backup_outdated ()
     : lists backup_files no longer in current directory;
     : date: 2019-12-09;
     : date: 2019-12-28;
-    backup_directories
+    backup_directories;
     comm -23 <( ignore pushd $BACKUP_DIRECTORY; onlyfiles; ignore popd) <(onlyfiles)
 }
 backup_local () 
@@ -182,15 +184,16 @@ backup_ver ()
     : a LINK is sufficient if not mandatory.;
     : date: 2017-03-05;
     : date: 2019-04-28 remove opional argument name for version;
-    : date: 2020-05-02 add user-definable BACKUP_VERSION_FORMAT
-    : ${BACKUP_VERSION_FORMAT:="%Y%m_%b/%d_%a/%H%M%S"}    
-    backup_directories
+    : date: 2020-05-02 add user-definable BACKUP_VERSION_FORMAT;
+    : ${BACKUP_VERSION_FORMAT:="%Y%m_%b/%d_%a/%H%M%S"};
+    backup_directories;
     report_notdirectory $BACKUP_DIRECTORY && return 1;
-    local vername=$(date +"${BACKUP_VERSION_FORMAT}")
-    echo "$VERSION_DIRECTORY/$vername"
-    return    
-    set -- $(backup_files | sed "s/^/$BACKUP_DIRECTORY\//")
+    local vername=$(date +"${BACKUP_VERSION_FORMAT}");
+    read_devtty VERSION_DIRECTORY $VERSION_DIRECTORY
+    read_devtty VERSION_DIRECTORY $vername
+    set -- $(backup_files | sed "s/^/$BACKUP_DIRECTORY\//");
     set -- ${*:-/dev/null};
+    read_devtty args $*
     ln -f $* $(needir "$VERSION_DIRECTORY/$vername")
+    comment "$VERSION_DIRECTORY/$vername"
 }
-
